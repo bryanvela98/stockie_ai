@@ -123,8 +123,8 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 **Goal:** Backend can resolve US tickers and fetch OHLCV/fundamentals via a provider-agnostic interface. Frontend can search tickers.
 
 - [x] `@bvela` Design `MarketDataProvider` and `FundamentalsProvider` abstract interfaces (per Dependency Inversion).
-- [ ] `@bvela` Implement `YFinanceProvider` as the first concrete provider.
-- [ ] `@bvela` Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds.
+- [x] `@bvela` Implement `YFinanceProvider` as the first concrete provider.
+- [x] `@bvela` Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds.
 - [ ] `@bvela` Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations.
 - [ ] `@bvela` Repository pattern: `TickerRepository`, `PriceRepository`.
 - [ ] `@bvela` `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name).

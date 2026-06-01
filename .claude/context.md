@@ -15,8 +15,8 @@
 | # | Status | Owner | Task |
 |---|--------|-------|------|
 | 1 | ✅ | @bvela | Design `MarketDataProvider` and `FundamentalsProvider` abstract interfaces (per Dependency Inversion) |
-| 2 | ⬜ | @bvela | Implement `YFinanceProvider` as the first concrete provider |
-| 3 | ⬜ | @bvela | Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds |
+| 2 | ✅ | @bvela | Implement `YFinanceProvider` as the first concrete provider |
+| 3 | ✅ | @bvela | Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds |
 | 4 | ⬜ | @bvela | Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations |
 | 5 | ⬜ | @bvela | Repository pattern: `TickerRepository`, `PriceRepository` |
 | 6 | ⬜ | @bvela | `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name) |
