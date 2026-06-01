@@ -6,7 +6,29 @@
 
 ---
 
-## Active sprint: Sprint 0 — Scaffolding (Weeks 1–2)
+## Active sprint: Sprint 1 — Data provider abstractions + ticker resolution (Weeks 3–4)
+
+**Goal:** Backend can resolve US tickers and fetch OHLCV/fundamentals via a provider-agnostic interface. Frontend can search tickers.
+
+### Checklist
+
+| # | Status | Owner | Task |
+|---|--------|-------|------|
+| 1 | ✅ | @bvela | Design `MarketDataProvider` and `FundamentalsProvider` abstract interfaces (per Dependency Inversion) |
+| 2 | ⬜ | @bvela | Implement `YFinanceProvider` as the first concrete provider |
+| 3 | ⬜ | @bvela | Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds |
+| 4 | ⬜ | @bvela | Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations |
+| 5 | ⬜ | @bvela | Repository pattern: `TickerRepository`, `PriceRepository` |
+| 6 | ⬜ | @bvela | `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name) |
+| 7 | ⬜ | @bvela | Unit tests for providers (with mocked HTTP) and search endpoint |
+| 8 | ⬜ | @despinoza | Global search bar component with debounced query against `/tickers/search` |
+| 9 | ⬜ | @despinoza | Ticker result list UI (symbol, name, exchange, asset type chip) |
+| 10 | ⬜ | @despinoza | Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now |
+| 11 | ⬜ | @both | Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest) |
+
+---
+
+## Completed sprint: Sprint 0 — Scaffolding (Weeks 1–2)
 
 **Goal:** Full stack running locally. No business logic yet.
 
@@ -41,13 +63,21 @@
 | `app/models/base.py` | `DeclarativeBase` — all future ORM models inherit from this |
 | `app/api/v1/health.py` | `GET /health` → `{status, version, environment, timestamp}` |
 | `app/main.py` | `create_app()` factory; lifespan hooks; router registration |
+| `app/data_providers/__init__.py` | Barrel export: interfaces, value objects, exceptions |
+| `app/data_providers/exceptions.py` | `ProviderError`, `TickerNotFoundError` hierarchy |
+| `app/data_providers/models.py` | `TickerInfo`, `PriceBar`, `Fundamentals` Pydantic value objects |
+| `app/data_providers/base.py` | `MarketDataProvider` ABC, `FundamentalsProvider` ABC |
+| `app/data_providers/yfinance_provider.py` | `YFinanceProvider` — wraps yfinance via `asyncio.to_thread`; NaN→None |
+| `app/data_providers/polygon_provider.py` | `PolygonProvider` stub — satisfies ABCs, raises `NotImplementedError` |
 | `tests/conftest.py` | Shared fixtures: `client` (sync `TestClient`), `async_client` (httpx) |
 | `tests/test_health.py` | 5 tests covering `/health` shape and invariants |
+| `tests/data_providers/test_yfinance_provider.py` | 7 tests — mocked yfinance; happy paths + TickerNotFoundError + NaN mapping |
+| `tests/data_providers/test_polygon_provider.py` | 6 tests — ABC contract + NotImplementedError on all methods |
 | `alembic/env.py` | Async migration runner; reads `DATABASE_URL` from `AppSettings` |
 | `alembic/versions/20260522_…_initial.py` | Empty initial revision |
 | `pyproject.toml` | uv project; runtime + dev deps; ruff/black/mypy/pytest config |
 
-**Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`
+**Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`
 
 ### Frontend (`frontend/`)
@@ -132,4 +162,4 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 ## Next sprint preview
 
-**Sprint 1 (Weeks 3–4):** `MarketDataProvider` + `FundamentalsProvider` abstract interfaces, `YFinanceProvider`, `Ticker` / `PriceBar` / `Fundamentals` SQLAlchemy models, `GET /tickers/search?q=`, ticker search UI.
+**Sprint 2 (Weeks 5–6):** Celery + Redis worker, `daily_prices` and `quarterly_fundamentals` beat tasks, backfill script, TimescaleDB hypertable for `price_bars`, `GET /tickers/{symbol}/prices` endpoint, TradingView Lightweight Charts on the ticker page.
