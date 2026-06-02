@@ -125,8 +125,8 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` Design `MarketDataProvider` and `FundamentalsProvider` abstract interfaces (per Dependency Inversion).
 - [x] `@bvela` Implement `YFinanceProvider` as the first concrete provider.
 - [x] `@bvela` Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds.
-- [ ] `@bvela` Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations.
-- [ ] `@bvela` Repository pattern: `TickerRepository`, `PriceRepository`.
+- [x] `@bvela` Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations.
+- [x] `@bvela` Repository pattern: `TickerRepository`, `PriceRepository`.
 - [ ] `@bvela` `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name).
 - [ ] `@bvela` Unit tests for providers (with mocked HTTP) and search endpoint.
 - [ ] `@despinoza` Global search bar component with debounced query against `/tickers/search`.

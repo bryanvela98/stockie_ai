@@ -17,8 +17,8 @@
 | 1 | ✅ | @bvela | Design `MarketDataProvider` and `FundamentalsProvider` abstract interfaces (per Dependency Inversion) |
 | 2 | ✅ | @bvela | Implement `YFinanceProvider` as the first concrete provider |
 | 3 | ✅ | @bvela | Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds |
-| 4 | ⬜ | @bvela | Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations |
-| 5 | ⬜ | @bvela | Repository pattern: `TickerRepository`, `PriceRepository` |
+| 4 | ✅ | @bvela | Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations |
+| 5 | ✅ | @bvela | Repository pattern: `TickerRepository`, `PriceRepository` |
 | 6 | ⬜ | @bvela | `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name) |
 | 7 | ⬜ | @bvela | Unit tests for providers (with mocked HTTP) and search endpoint |
 | 8 | ⬜ | @despinoza | Global search bar component with debounced query against `/tickers/search` |
@@ -75,10 +75,20 @@
 | `tests/data_providers/test_polygon_provider.py` | 6 tests — ABC contract + NotImplementedError on all methods |
 | `alembic/env.py` | Async migration runner; reads `DATABASE_URL` from `AppSettings` |
 | `alembic/versions/20260522_…_initial.py` | Empty initial revision |
+| `app/models/ticker.py` | `Ticker` ORM model — `tickers` table; symbol, name, exchange, asset_type, sector, industry |
+| `app/models/price_bar.py` | `PriceBar` ORM model — `price_bars` table; OHLCV + adjusted_close; unique (ticker_id, ts, interval) |
+| `app/models/fundamentals.py` | `Fundamentals` ORM model — `fundamentals` table; snapshot per (ticker_id, as_of) |
+| `app/repositories/__init__.py` | Barrel export: `TickerRepository`, `PriceRepository` |
+| `app/repositories/ticker_repository.py` | `TickerRepository` — get_by_symbol, get_by_id, upsert, search |
+| `app/repositories/price_repository.py` | `PriceRepository` — upsert_bars (idempotent), get_bars (date+interval filter) |
+| `alembic/versions/20260601_b3f8a2c19d04_add_ticker_pricebar_fundamentals.py` | Migration: creates tickers, price_bars, fundamentals tables + indexes |
+| `tests/repositories/conftest.py` | Async SQLite in-memory fixtures: `async_engine`, `db_session` |
+| `tests/repositories/test_ticker_repository.py` | 10 tests — upsert, get_by_symbol/id, search (prefix + case-insensitive + limit) |
+| `tests/repositories/test_price_repository.py` | 6 tests — upsert idempotency, range query, interval filter |
 | `pyproject.toml` | uv project; runtime + dev deps; ruff/black/mypy/pytest config |
 
 **Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`
-**Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`
+**Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
 
 ### Frontend (`frontend/`)
 
