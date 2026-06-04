@@ -6,6 +6,7 @@ Last Modified By: bvela
 Created: 2026-05-22
 Last Modified:
     2026-05-22 - File created; registered /health router and structured logging setup.
+    2026-06-01 - Registered tickers router with /tickers prefix.
 """
 
 from collections.abc import AsyncIterator
@@ -15,6 +16,7 @@ import structlog
 from fastapi import FastAPI
 
 from app.api.v1.health import router as health_router
+from app.api.v1.tickers import router as tickers_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -58,6 +60,7 @@ def create_app() -> FastAPI:
     )
 
     application.include_router(health_router)
+    application.include_router(tickers_router, prefix="/tickers")
 
     return application
 
