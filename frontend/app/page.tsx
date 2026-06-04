@@ -7,11 +7,13 @@
  * Last Modified:
  *     2026-05-23 - Sprint 0 placeholder; shows app name and health-check link.
  *     2026-05-25 - Wired HealthStatus server component; added Suspense skeleton.
+ *     2026-06-01 - Added TickerSearchBar; updated tagline.
  */
 
 import { Suspense } from "react";
 
 import { HealthStatus, HealthStatusSkeleton } from "@/components/health-status";
+import { TickerSearchBar } from "@/components/ticker-search-bar";
 
 export default function Home() {
   return (
@@ -19,9 +21,11 @@ export default function Home() {
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight">Stockie AI</h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          AI-powered stock analysis — coming soon.
+          AI-powered stock analysis for US equities and ETFs.
         </p>
       </div>
+
+      <TickerSearchBar />
 
       <Suspense fallback={<HealthStatusSkeleton />}>
         <HealthStatus />
