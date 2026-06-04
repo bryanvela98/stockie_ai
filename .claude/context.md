@@ -19,11 +19,11 @@
 | 3 | ✅ | @bvela | Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds |
 | 4 | ✅ | @bvela | Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations |
 | 5 | ✅ | @bvela | Repository pattern: `TickerRepository`, `PriceRepository` |
-| 6 | ⬜ | @bvela | `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name) |
-| 7 | ⬜ | @bvela | Unit tests for providers (with mocked HTTP) and search endpoint |
-| 8 | ⬜ | @despinoza | Global search bar component with debounced query against `/tickers/search` |
-| 9 | ⬜ | @despinoza | Ticker result list UI (symbol, name, exchange, asset type chip) |
-| 10 | ⬜ | @despinoza | Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now |
+| 6 | ✅ | @bvela | `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name) |
+| 7 | ✅ | @bvela | Unit tests for providers (with mocked HTTP) and search endpoint |
+| 8 | ✅ | @despinoza | Global search bar component with debounced query against `/tickers/search` |
+| 9 | ✅ | @despinoza | Ticker result list UI (symbol, name, exchange, asset type chip) |
+| 10 | ✅ | @despinoza | Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now |
 | 11 | ⬜ | @both | Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest) |
 
 ---
@@ -87,6 +87,9 @@
 | `tests/repositories/test_price_repository.py` | 6 tests — upsert idempotency, range query, interval filter |
 | `pyproject.toml` | uv project; runtime + dev deps; ruff/black/mypy/pytest config |
 
+| `app/api/v1/tickers.py` | `GET /tickers/search?q=` + `GET /tickers/{symbol}`; `TickerSearchResult` + `TickerSearchResponse` Pydantic models |
+| `tests/test_tickers.py` | 8 endpoint tests with SQLite `get_db` override; covers search, case-insensitivity, 404, 422 |
+
 **Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
 
@@ -103,6 +106,11 @@
 | `lib/api/index.ts` | Barrel re-export: `apiClient`, `components`, `paths`, `operations` |
 | `components/health-status.tsx` | Async server component: fetches `/health`, renders status card + skeleton |
 | `types/css.d.ts` | Ambient CSS module declaration (silences IDE false-positive on CSS side-effect imports) |
+
+| `components/ticker-result-item.tsx` | `TickerResultItem` — symbol chip, name, asset-type badge (color-coded), exchange |
+| `components/ticker-search-bar.tsx` | `TickerSearchBar` — debounced (300ms), keyboard nav (↑↓Enter Esc), ARIA combobox |
+| `app/tickers/[symbol]/page.tsx` | Ticker detail page — server component; metadata card + 3 placeholder sections |
+| `lib/api/schema.d.ts` | Extended with `/tickers/search` + `/tickers/{symbol}` paths + `TickerSearchResult/Response` schemas |
 
 **Stack:** Next.js 14.2 (App Router) + TypeScript + Tailwind CSS + ESLint + Prettier + shadcn/ui
 
