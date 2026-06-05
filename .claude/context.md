@@ -24,7 +24,7 @@
 | 8 | ✅ | @despinoza | Global search bar component with debounced query against `/tickers/search` |
 | 9 | ✅ | @despinoza | Ticker result list UI (symbol, name, exchange, asset type chip) |
 | 10 | ✅ | @despinoza | Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now |
-| 11 | ⬜ | @both | Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest) |
+| 11 | ✅ | @both | Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest) |
 
 ---
 

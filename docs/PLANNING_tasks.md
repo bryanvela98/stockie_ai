@@ -127,16 +127,18 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds.
 - [x] `@bvela` Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations.
 - [x] `@bvela` Repository pattern: `TickerRepository`, `PriceRepository`.
-- [ ] `@bvela` `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name).
-- [ ] `@bvela` Unit tests for providers (with mocked HTTP) and search endpoint.
-- [ ] `@despinoza` Global search bar component with debounced query against `/tickers/search`.
-- [ ] `@despinoza` Ticker result list UI (symbol, name, exchange, asset type chip).
-- [ ] `@despinoza` Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now.
-- [ ] `@both` Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest). Log under §7.
+- [x] `@bvela` `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name).
+- [x] `@bvela` Unit tests for providers (with mocked HTTP) and search endpoint.
+- [x] `@despinoza` Global search bar component with debounced query against `/tickers/search`.
+- [x] `@despinoza` Ticker result list UI (symbol, name, exchange, asset type chip).
+- [x] `@despinoza` Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now.
+- [x] `@both` Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest). Log under §7.
 
 **Retro:**
 
-> _What shipped:_ _What slipped:_ _What to change:_
+> _What shipped:_ Full provider abstraction layer (MarketDataProvider, FundamentalsProvider ABCs; YFinanceProvider; PolygonProvider stub). SQLAlchemy ORM models (Ticker, PriceBar, Fundamentals) + hand-written Alembic migration. TickerRepository + PriceRepository with SQLite-based unit tests. GET /tickers/search and GET /tickers/{symbol} endpoints (42 tests green). Frontend: TickerSearchBar (debounced, keyboard nav, ARIA), TickerResultItem, ticker detail page skeleton at /tickers/[symbol].
+> _What slipped:_ Nothing — all 11 tasks completed.
+> _What to change:_ Pre-commit mypy hook caught a name-collision bug (`import app.models` shadowing `from app.main import app`) that tests didn't catch. Add mypy to the local dev check step before committing.
 
 ---
 
@@ -376,6 +378,7 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 
 - **2026-05-21** — Approved feature plan (PLANNING_features.md). Locked decisions D1–D7 above.
 - **2026-05-21** — Backend = bvela, frontend = despinoza. Either may pair on the other's area for hard parts (recommendation engine, BVL ingestion).
+- **2026-06-01** — Initial ticker universe for Sprint 2 week-1 ingest: **50 tickers** (45 stocks + 5 ETFs). ETFs: SPY, QQQ, IWM, GLD, TLT. Stocks: 4–5 per GICS sector — IT: AAPL MSFT NVDA AVGO ORCL; Financials: JPM BAC WFC GS; Health Care: UNH JNJ ABBV LLY; Consumer Disc.: AMZN TSLA HD MCD; Industrials: CAT RTX UPS HON; Comm. Services: GOOGL META NFLX DIS; Consumer Staples: PG KO WMT COST; Energy: XOM CVX COP SLB; Real Estate: AMT PLD EQIX O; Materials: LIN APD FCX NEM; Utilities: NEE DUK SO AEP. **This is the seed list only** — the universe is stored in the DB and can be expanded to the full S&P 500 or beyond by inserting more Ticker rows; no code changes needed. Rationale: 50 is small enough for reliable yfinance ingest during Sprint 2 testing and sector-balanced so Sprint 3 peer-comparison has ≥3 neighbors per sector. Approved @both.
 - **YYYY-MM-DD** — _Template: brief decision, rationale, who approved._
 
 ---
