@@ -40,23 +40,23 @@ The backend must be running for the landing page health card to show live data.
 
 ## Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable              | Default                 | Description                     |
+| --------------------- | ----------------------- | ------------------------------- |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Base URL of the FastAPI backend |
 
 ---
 
 ## Available scripts
 
-| Script | What it does |
-|--------|-------------|
-| `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Production build |
-| `npm run start` | Serve the production build |
-| `npm run lint` | ESLint across all files |
-| `npm run format` | Prettier — auto-fix all files |
-| `npm run format:check` | Prettier — check without writing |
-| `npm run generate` | Regenerate TypeScript types from `GET /openapi.json` |
+| Script                 | What it does                                         |
+| ---------------------- | ---------------------------------------------------- |
+| `npm run dev`          | Start dev server with hot reload                     |
+| `npm run build`        | Production build                                     |
+| `npm run start`        | Serve the production build                           |
+| `npm run lint`         | ESLint across all files                              |
+| `npm run format`       | Prettier — auto-fix all files                        |
+| `npm run format:check` | Prettier — check without writing                     |
+| `npm run generate`     | Regenerate TypeScript types from `GET /openapi.json` |
 
 ---
 
