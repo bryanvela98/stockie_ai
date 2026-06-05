@@ -8,6 +8,7 @@ Last Modified By: bvela
 Created: 2026-05-23
 Last Modified:
     2026-05-23 - File created; added sync client and async_client fixtures.
+    2026-06-05 - Replaced httpx with httpx2 to silence StarletteDeprecationWarning.
 """
 
 from collections.abc import AsyncIterator
@@ -15,7 +16,7 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 
 from app.main import app
 

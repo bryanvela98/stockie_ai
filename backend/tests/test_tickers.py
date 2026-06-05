@@ -7,12 +7,13 @@ Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; 8 test cases for search and detail endpoints.
+    2026-06-05 - Replaced httpx with httpx2 import.
 """
 
 from collections.abc import AsyncIterator
 
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
