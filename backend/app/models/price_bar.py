@@ -1,13 +1,15 @@
 """
 Description: SQLAlchemy ORM model for the `price_bars` table.
              Stores OHLCV candlestick data for each tracked ticker.
-             The unique constraint on (ticker_id, timestamp, interval) makes
-             upsert-based ingestion idempotent — re-running the daily ingest
-             job will not produce duplicate rows.
-             Note: Sprint 2 will convert this table to a TimescaleDB hypertable
-             and add the compound index (ticker_id, timestamp) required for
-             fast time-range queries. The model definition here pre-stages that
-             index so the migration in Sprint 2 is additive only.
+             Primary key is the natural composite (ticker_id, timestamp, interval)
+             which satisfies TimescaleDB's requirement that the time-partitioning
+             column (timestamp) be present in every unique index including the PK.
+             Using the natural key eliminates the surrogate `id` column, reduces
+             row size, and avoids SQLite AUTOINCREMENT incompatibility in tests.
+             The Sprint 2 Alembic migration converts this table to a hypertable
+             partitioned on `timestamp`.
+             Upsert-based ingestion is idempotent because the PK uniquely
+             identifies each (ticker, point-in-time, granularity) tuple.
              Import alias: files that also import the Pydantic DTO from
              app.data_providers.models should use
              `from app.models.price_bar import PriceBar as PriceBarModel`.
@@ -16,13 +18,17 @@ Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; PriceBar model with FK to tickers, unique
                  constraint, and compound index.
+    2026-06-07 - Replaced surrogate id PK with natural composite PK
+                 (ticker_id, timestamp, interval) for TimescaleDB hypertable
+                 compatibility. Removed UniqueConstraint (now the PK).
+                 (Sprint 2-A Task 4).
 """
 
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -36,22 +42,19 @@ class PriceBar(Base):
 
     __tablename__ = "price_bars"
     __table_args__ = (
-        UniqueConstraint(
-            "ticker_id",
-            "timestamp",
-            "interval",
-            name="uq_price_bar_ticker_ts_interval",
-        ),
-        # Pre-staged for Sprint 2 TimescaleDB hypertable conversion
+        # Compound index for fast time-range queries per ticker.
+        # Also satisfies TimescaleDB's requirement that the hypertable PK
+        # include the time-partitioning column.
         Index("ix_price_bars_ticker_id_timestamp", "ticker_id", "timestamp"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     ticker_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("tickers.id", ondelete="CASCADE"), nullable=False
+        BigInteger, ForeignKey("tickers.id", ondelete="CASCADE"), nullable=False, primary_key=True
     )
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    interval: Mapped[str] = mapped_column(String(10), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, primary_key=True
+    )
+    interval: Mapped[str] = mapped_column(String(10), nullable=False, primary_key=True)
     open: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     high: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     low: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
@@ -63,6 +66,6 @@ class PriceBar(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<PriceBar id={self.id} ticker_id={self.ticker_id}"
+            f"<PriceBar ticker_id={self.ticker_id}"
             f" ts={self.timestamp} interval={self.interval!r}>"
         )
