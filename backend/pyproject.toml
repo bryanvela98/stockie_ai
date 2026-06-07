@@ -17,6 +17,8 @@ dependencies = [
     "asyncpg>=0.30",
     "alembic>=1.14",
     "yfinance>=0.2",
+    "celery[redis]>=5.4",
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]
