@@ -1,4 +1,5 @@
-# Description: Local development stack — TimescaleDB (Postgres 16) + Redis 7.
+# Description: Local development stack — TimescaleDB (Postgres 16) + Redis 7
+#              + Celery worker + Celery beat scheduler.
 #              Run from the repo root: docker compose -f infra/docker-compose.yml up -d
 #              Or from this directory:  docker compose up -d
 #
@@ -9,6 +10,7 @@
 # Created: 2026-05-22
 # Last Modified:
 #     2026-05-22 - File created; added db (TimescaleDB) and redis services.
+#     2026-06-07 - Added worker and beat Celery services (Sprint 2-A Task 3).
 
 services:
   # ── Postgres 16 + TimescaleDB ─────────────────────────────────────────────
@@ -58,6 +60,49 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - stockie_net
+
+  # ── Celery worker ─────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: stockie_worker
+    restart: unless-stopped
+    command: >
+      celery -A app.workers.celery_app worker
+      --loglevel=info
+      --concurrency=2
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-stockie}:${POSTGRES_PASSWORD:-stockie}@db:5432/${POSTGRES_DB:-stockie_ai}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - stockie_net
+
+  # ── Celery beat scheduler ──────────────────────────────────────────────────
+  beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: stockie_beat
+    restart: unless-stopped
+    command: >
+      celery -A app.workers.celery_app beat
+      --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-stockie}:${POSTGRES_PASSWORD:-stockie}@db:5432/${POSTGRES_DB:-stockie_ai}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - stockie_net
 
