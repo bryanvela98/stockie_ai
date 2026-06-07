@@ -146,11 +146,11 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 
 **Goal:** Scheduled jobs pull daily OHLCV and quarterly fundamentals into Postgres. Time-series queries are fast.
 
-- [ ] `@bvela` Add Celery + Redis broker; one worker container in `docker-compose`.
+- [x] `@bvela` Add Celery + Redis broker; one worker container in `docker-compose`.
 - [ ] `@bvela` `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers.
 - [ ] `@bvela` `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios.
 - [ ] `@bvela` Backfill script: load N years of history for the initial universe.
-- [ ] `@bvela` Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)`.
+- [x] `@bvela` Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)`.
 - [ ] `@bvela` `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint with sane pagination/limits.
 - [ ] `@bvela` Corporate-actions handling: store splits and dividends, expose adjusted-close.
 - [ ] `@bvela` "As-of" timestamp threaded through every endpoint response.

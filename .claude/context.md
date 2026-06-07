@@ -6,25 +6,26 @@
 
 ---
 
-## Active sprint: Sprint 1 — Data provider abstractions + ticker resolution (Weeks 3–4)
+## Active sprint: Sprint 2 — Ingestion pipeline + price storage (Weeks 5–6)
 
-**Goal:** Backend can resolve US tickers and fetch OHLCV/fundamentals via a provider-agnostic interface. Frontend can search tickers.
+**Goal:** Scheduled jobs pull daily OHLCV and quarterly fundamentals into Postgres. Time-series queries are fast.
 
 ### Checklist
 
 | # | Status | Owner | Task |
 |---|--------|-------|------|
-| 1 | ✅ | @bvela | Design `MarketDataProvider` and `FundamentalsProvider` abstract interfaces (per Dependency Inversion) |
-| 2 | ✅ | @bvela | Implement `YFinanceProvider` as the first concrete provider |
-| 3 | ✅ | @bvela | Stub a second provider (`PolygonProvider`) with NotImplemented to prove the abstraction holds |
-| 4 | ✅ | @bvela | Define `Ticker`, `PriceBar`, `Fundamentals` SQLAlchemy models + migrations |
-| 5 | ✅ | @bvela | Repository pattern: `TickerRepository`, `PriceRepository` |
-| 6 | ✅ | @bvela | `GET /tickers/search?q=` endpoint (prefix + fuzzy match on symbol & name) |
-| 7 | ✅ | @bvela | Unit tests for providers (with mocked HTTP) and search endpoint |
-| 8 | ✅ | @despinoza | Global search bar component with debounced query against `/tickers/search` |
-| 9 | ✅ | @despinoza | Ticker result list UI (symbol, name, exchange, asset type chip) |
-| 10 | ✅ | @despinoza | Ticker detail page skeleton (route: `/tickers/[symbol]`), shows raw data for now |
-| 11 | ✅ | @both | Decide initial ticker universe size (top N S&P500 + top M ETFs for week-1 ingest) |
+| 1 | ✅ | @bvela | Add Celery + Redis broker; one worker container in `docker-compose` |
+| 2 | ⬜ | @bvela | `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers |
+| 3 | ⬜ | @bvela | `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios |
+| 4 | ⬜ | @bvela | Backfill script: load N years of history for the initial universe |
+| 5 | ✅ | @bvela | Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)` |
+| 6 | ⬜ | @bvela | `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint |
+| 7 | ⬜ | @bvela | Corporate-actions handling: store splits and dividends, expose adjusted-close |
+| 8 | ⬜ | @bvela | "As-of" timestamp threaded through every endpoint response |
+| 9 | ⬜ | @bvela | Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness |
+| 10 | ⬜ | @despinoza | Integrate TradingView Lightweight Charts on the ticker page |
+| 11 | ⬜ | @despinoza | Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint |
+| 12 | ⬜ | @despinoza | "Data as of" badge component, used across the app |
 
 ---
 
@@ -90,7 +91,12 @@
 | `app/api/v1/tickers.py` | `GET /tickers/search?q=` + `GET /tickers/{symbol}`; `TickerSearchResult` + `TickerSearchResponse` Pydantic models |
 | `tests/test_tickers.py` | 8 endpoint tests with SQLite `get_db` override; covers search, case-insensitivity, 404, 422 |
 
-**Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`
+| `app/workers/__init__.py` | Barrel export for `celery_app` |
+| `app/workers/celery_app.py` | `make_celery()` factory + module-level `celery_app`; JSON serialization; Redis fallback to localhost |
+| `alembic/versions/20260607_…_convert_price_bars_hypertable.py` | Migration: drops surrogate id, creates natural PK (ticker_id, timestamp, interval), calls `create_hypertable` |
+| `backend/Dockerfile` | Multi-stage build (uv); used by worker and beat services in docker-compose |
+
+**Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
 
 ### Frontend (`frontend/`)
@@ -180,4 +186,4 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 ## Next sprint preview
 
-**Sprint 2 (Weeks 5–6):** Celery + Redis worker, `daily_prices` and `quarterly_fundamentals` beat tasks, backfill script, TimescaleDB hypertable for `price_bars`, `GET /tickers/{symbol}/prices` endpoint, TradingView Lightweight Charts on the ticker page.
+**Sprint 2 (Weeks 5–6) — IN PROGRESS:** Infrastructure complete (Celery, Dockerfile, hypertable migration). Remaining: ingestion beat tasks, backfill script, corporate actions, prices API endpoint, frontend chart + timeframe toggle. See `.claude/plans/sprint2-ingestion-pipeline.md` and `.claude/plans/sprint2-prices-api-and-frontend.md`.
