@@ -10,6 +10,7 @@ Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; Ticker model with relationships to PriceBar and
                  Fundamentals.
+    2026-06-09 - Added corporate_actions relationship (Sprint 2-B Task 1).
 """
 
 from datetime import datetime
@@ -21,6 +22,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 if TYPE_CHECKING:
+    from app.models.corporate_action import CorporateAction
     from app.models.fundamentals import Fundamentals
     from app.models.price_bar import PriceBar
 
@@ -55,6 +57,9 @@ class Ticker(Base):
     )
     fundamentals: Mapped[list["Fundamentals"]] = relationship(
         "Fundamentals", back_populates="ticker", cascade="all, delete-orphan"
+    )
+    corporate_actions: Mapped[list["CorporateAction"]] = relationship(
+        "CorporateAction", back_populates="ticker", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
