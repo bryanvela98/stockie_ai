@@ -147,14 +147,14 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 **Goal:** Scheduled jobs pull daily OHLCV and quarterly fundamentals into Postgres. Time-series queries are fast.
 
 - [x] `@bvela` Add Celery + Redis broker; one worker container in `docker-compose`.
-- [ ] `@bvela` `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers.
-- [ ] `@bvela` `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios.
-- [ ] `@bvela` Backfill script: load N years of history for the initial universe.
+- [x] `@bvela` `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers.
+- [x] `@bvela` `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios.
+- [x] `@bvela` Backfill script: load N years of history for the initial universe.
 - [x] `@bvela` Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)`.
 - [ ] `@bvela` `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint with sane pagination/limits.
-- [ ] `@bvela` Corporate-actions handling: store splits and dividends, expose adjusted-close.
-- [ ] `@bvela` "As-of" timestamp threaded through every endpoint response.
-- [ ] `@bvela` Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness.
+- [x] `@bvela` Corporate-actions handling: store splits and dividends, expose adjusted-close.
+- [x] `@bvela` "As-of" timestamp threaded through every endpoint response.
+- [x] `@bvela` Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness.
 - [ ] `@despinoza` Integrate TradingView Lightweight Charts (or chosen lib) on the ticker page.
 - [ ] `@despinoza` Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint.
 - [ ] `@despinoza` "Data as of" badge component, used across the app.

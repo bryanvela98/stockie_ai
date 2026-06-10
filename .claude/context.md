@@ -15,14 +15,14 @@
 | # | Status | Owner | Task |
 |---|--------|-------|------|
 | 1 | ✅ | @bvela | Add Celery + Redis broker; one worker container in `docker-compose` |
-| 2 | ⬜ | @bvela | `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers |
-| 3 | ⬜ | @bvela | `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios |
-| 4 | ⬜ | @bvela | Backfill script: load N years of history for the initial universe |
+| 2 | ✅ | @bvela | `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers |
+| 3 | ✅ | @bvela | `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios |
+| 4 | ✅ | @bvela | Backfill script: load N years of history for the initial universe |
 | 5 | ✅ | @bvela | Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)` |
 | 6 | ⬜ | @bvela | `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint |
-| 7 | ⬜ | @bvela | Corporate-actions handling: store splits and dividends, expose adjusted-close |
-| 8 | ⬜ | @bvela | "As-of" timestamp threaded through every endpoint response |
-| 9 | ⬜ | @bvela | Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness |
+| 7 | ✅ | @bvela | Corporate-actions handling: store splits and dividends, expose adjusted-close |
+| 8 | ✅ | @bvela | "As-of" timestamp threaded through every endpoint response |
+| 9 | ✅ | @bvela | Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness |
 | 10 | ⬜ | @despinoza | Integrate TradingView Lightweight Charts on the ticker page |
 | 11 | ⬜ | @despinoza | Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint |
 | 12 | ⬜ | @despinoza | "Data as of" badge component, used across the app |
@@ -92,8 +92,17 @@
 | `tests/test_tickers.py` | 8 endpoint tests with SQLite `get_db` override; covers search, case-insensitivity, 404, 422 |
 
 | `app/workers/__init__.py` | Barrel export for `celery_app` |
-| `app/workers/celery_app.py` | `make_celery()` factory + module-level `celery_app`; JSON serialization; Redis fallback to localhost |
+| `app/workers/celery_app.py` | `make_celery()` factory + module-level `celery_app`; JSON serialization; Redis fallback; full beat_schedule (daily_prices, quarterly_fundamentals, corporate_actions_sync) |
+| `app/workers/tasks/daily_prices.py` | `run_daily_prices` task — fetches yesterday's OHLCV for all active tickers via YFinanceProvider, upserts via PriceRepository. Fires at 18:00 UTC daily. |
+| `app/workers/tasks/quarterly_fundamentals.py` | `run_quarterly_fundamentals` task — fetches today's fundamentals for all active tickers. Fires every Monday at 07:00 UTC. |
+| `app/workers/tasks/corporate_actions_sync.py` | `run_corporate_actions_sync` task — syncs splits + dividends, recomputes adjusted_close only for newly inserted splits. Fires every Monday at 06:00 UTC. |
 | `alembic/versions/20260607_…_convert_price_bars_hypertable.py` | Migration: drops surrogate id, creates natural PK (ticker_id, timestamp, interval), calls `create_hypertable` |
+| `alembic/versions/20260609_c7e4f1a2b903_add_corporate_actions.py` | Migration: creates corporate_actions table with unique constraint (ticker_id, action_type, ex_date) |
+| `app/models/corporate_action.py` | `CorporateAction` ORM model — splits and dividends with unique constraint for idempotent upsert |
+| `app/repositories/corporate_action_repository.py` | `CorporateActionRepository` — upsert (idempotent), get_by_ticker (with optional since filter) |
+| `app/repositories/fundamentals_repository.py` | `FundamentalsRepository` — upsert (idempotent on ticker_id + as_of), get_latest |
+| `app/data_providers/models.py` | `CorporateActionDTO` added alongside TickerInfo, PriceBar, Fundamentals |
+| `scripts/backfill.py` | CLI: `--years N --symbols A,B --dry-run --delay`. Idempotent backfill of OHLCV history. |
 | `backend/Dockerfile` | Multi-stage build (uv); used by worker and beat services in docker-compose |
 
 **Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`
@@ -186,4 +195,4 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 ## Next sprint preview
 
-**Sprint 2 (Weeks 5–6) — IN PROGRESS:** Infrastructure complete (Celery, Dockerfile, hypertable migration). Remaining: ingestion beat tasks, backfill script, corporate actions, prices API endpoint, frontend chart + timeframe toggle. See `.claude/plans/sprint2-ingestion-pipeline.md` and `.claude/plans/sprint2-prices-api-and-frontend.md`.
+**Sprint 2 (Weeks 5–6) — NEARLY COMPLETE:** All backend ingestion tasks done (Tasks 1–5, 7–9 ✅). One backend task remaining: `GET /tickers/{symbol}/prices` endpoint (Task 6). Three frontend tasks remain for @despinoza (Tasks 10–12: TradingView charts, timeframe toggle, data-as-of badge). See `.claude/plans/sprint2-prices-api-and-frontend.md` for the prices endpoint plan.
