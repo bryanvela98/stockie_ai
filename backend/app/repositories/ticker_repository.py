@@ -9,6 +9,7 @@ Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; get_by_symbol, get_by_id, upsert, search.
+    2026-06-09 - Added get_all_active() for Celery ingestion tasks (Sprint 2-B Task 4).
 """
 
 from sqlalchemy import func, select
@@ -95,6 +96,17 @@ class TickerRepository:
         self._session.add(ticker)
         await self._session.flush()  # populates ticker.id
         return ticker
+
+    async def get_all_active(self) -> list[Ticker]:
+        """Return all active Ticker rows ordered by symbol.
+
+        Returns:
+            List of Ticker rows where is_active is True, ordered by symbol ascending.
+        """
+        result = await self._session.execute(
+            select(Ticker).where(Ticker.is_active.is_(True)).order_by(Ticker.symbol)
+        )
+        return list(result.scalars().all())
 
     async def search(self, query: str, limit: int = 20) -> list[Ticker]:
         """Return Tickers whose symbol or name starts with query (case-insensitive).
