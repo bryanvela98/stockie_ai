@@ -10,7 +10,11 @@ Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; search and detail endpoints.
+    2026-06-09 - Added data_as_of field to TickerSearchResult and GET /{symbol} handler
+                 (Sprint 2-B Task 8).
 """
+
+from datetime import datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -19,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.models.ticker import Ticker
+from app.repositories.price_repository import PriceRepository
 from app.repositories.ticker_repository import TickerRepository
 
 router = APIRouter(tags=["tickers"])
@@ -38,6 +43,8 @@ class TickerSearchResult(BaseModel):
     currency: str
     sector: str | None = None
     industry: str | None = None
+    # Freshness indicator: MAX(price_bars.timestamp) for this ticker, or null if no data yet.
+    data_as_of: datetime | None = None
 
 
 class TickerSearchResponse(BaseModel):
@@ -127,8 +134,11 @@ async def get_ticker(
         HTTPException 404: If no ticker with the given symbol exists in the database.
     """
     _log.debug("ticker detail", symbol=symbol)
-    repo = TickerRepository(db)
-    ticker = await repo.get_by_symbol(symbol)
+    ticker_repo = TickerRepository(db)
+    ticker = await ticker_repo.get_by_symbol(symbol)
     if ticker is None:
         raise HTTPException(status_code=404, detail=f"Ticker not found: '{symbol.upper()}'")
-    return _to_result(ticker)
+    data_as_of = await PriceRepository(db).get_latest_timestamp(ticker.id)
+    result = _to_result(ticker)
+    result.data_as_of = data_as_of
+    return result

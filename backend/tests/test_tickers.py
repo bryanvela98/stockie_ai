@@ -8,6 +8,7 @@ Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; 8 test cases for search and detail endpoints.
     2026-06-05 - Replaced httpx with httpx2 import.
+    2026-06-09 - Added data_as_of assertion to detail endpoint tests (Sprint 2-B Task 8).
 """
 
 from collections.abc import AsyncIterator
@@ -149,6 +150,9 @@ async def test_get_ticker_returns_200(seeded_client: AsyncClient) -> None:
     assert body["name"] == "Apple Inc."
     assert body["exchange"] == "NASDAQ"
     assert body["asset_type"] == "EQUITY"
+    # data_as_of is null when no price bars have been ingested yet
+    assert "data_as_of" in body
+    assert body["data_as_of"] is None
 
 
 async def test_get_ticker_case_insensitive(seeded_client: AsyncClient) -> None:

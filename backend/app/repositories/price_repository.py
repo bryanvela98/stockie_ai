@@ -12,12 +12,13 @@ Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; upsert_bars and get_bars methods.
+    2026-06-09 - Added get_latest_timestamp() for data_as_of support (Sprint 2-B Task 8).
 """
 
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.data_providers.models import PriceBar as PriceBarDTO
@@ -146,3 +147,24 @@ class PriceRepository:
             .order_by(PriceBarModel.timestamp)
         )
         return list(result.scalars().all())
+
+    async def get_latest_timestamp(self, ticker_id: int) -> datetime | None:
+        """Return the most recent bar timestamp for a ticker.
+
+        Used to populate the `data_as_of` field in API responses so callers
+        can see how fresh the price data is.
+
+        Args:
+            ticker_id: Primary key of the parent Ticker row.
+
+        Returns:
+            The maximum timestamp across all intervals for the ticker, in UTC,
+            or None if no price bars exist yet.
+        """
+        result = await self._session.execute(
+            select(func.max(PriceBarModel.timestamp)).where(PriceBarModel.ticker_id == ticker_id)
+        )
+        ts: datetime | None = result.scalar_one_or_none()
+        if ts is not None and ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+        return ts
