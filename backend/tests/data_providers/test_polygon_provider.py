@@ -8,6 +8,7 @@ Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; 6 test cases for instantiation and method stubs.
+    2026-06-09 - Added test for get_corporate_actions stub (Sprint 2-B Task 6).
 """
 
 from datetime import date
@@ -57,3 +58,10 @@ async def test_get_fundamentals_raises_not_implemented() -> None:
     """get_fundamentals must raise NotImplementedError until the sprint is done."""
     with pytest.raises(NotImplementedError):
         await PolygonProvider().get_fundamentals("AAPL")
+
+
+@pytest.mark.asyncio
+async def test_get_corporate_actions_raises_not_implemented() -> None:
+    """get_corporate_actions must raise NotImplementedError until the sprint is done."""
+    with pytest.raises(NotImplementedError):
+        await PolygonProvider().get_corporate_actions("AAPL")

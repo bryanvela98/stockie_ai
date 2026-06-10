@@ -1,7 +1,8 @@
 """
 Description: Concrete data provider backed by the yfinance library.
-             Wraps the unofficial Yahoo Finance API to deliver OHLCV price bars
-             and fundamental snapshots for US equities and ETFs.
+             Wraps the unofficial Yahoo Finance API to deliver OHLCV price bars,
+             fundamental snapshots, and corporate-action history for US equities
+             and ETFs.
              All yfinance I/O runs inside asyncio.to_thread to avoid blocking the
              FastAPI event loop, since yfinance is fully synchronous.
              WARNING: yfinance wraps unofficial Yahoo Finance endpoints that may
@@ -13,18 +14,20 @@ Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; implemented YFinanceProvider with get_ticker_info,
                  get_price_bars, and get_fundamentals.
+    2026-06-09 - Added get_corporate_actions() (Sprint 2-B Task 6).
 """
 
 import asyncio
 import math
 from datetime import UTC, date
+from decimal import Decimal
 from typing import Any
 
 import yfinance as yf
 
 from app.data_providers.base import FundamentalsProvider, MarketDataProvider
 from app.data_providers.exceptions import ProviderError, TickerNotFoundError
-from app.data_providers.models import Fundamentals, PriceBar, TickerInfo
+from app.data_providers.models import CorporateActionDTO, Fundamentals, PriceBar, TickerInfo
 
 
 def _float_or_none(value: object) -> float | None:
@@ -226,3 +229,58 @@ class YFinanceProvider(MarketDataProvider, FundamentalsProvider):
             week_52_high=_float_or_none(raw.get("fiftyTwoWeekHigh")),
             week_52_low=_float_or_none(raw.get("fiftyTwoWeekLow")),
         )
+
+    async def get_corporate_actions(self, symbol: str) -> list[CorporateActionDTO]:
+        """Fetch split and dividend history for a symbol from Yahoo Finance.
+
+        yfinance returns splits as a ratio (e.g. 2.0 for a 2-for-1 split) and
+        dividends as the cash amount per share. Zero-valued entries are skipped
+        as they indicate data artefacts from the yfinance unofficial API.
+
+        Args:
+            symbol: Exchange ticker symbol.
+
+        Returns:
+            List of CorporateActionDTO objects (splits + dividends combined),
+            ordered by ex_date ascending. May be empty for tickers with no
+            recorded corporate-action history.
+
+        Raises:
+            ProviderError: On network or parse failures.
+        """
+
+        def _fetch() -> tuple[Any, Any]:
+            t = yf.Ticker(symbol)
+            return t.splits, t.dividends
+
+        try:
+            splits, dividends = await asyncio.to_thread(_fetch)
+        except Exception as exc:
+            raise ProviderError(
+                f"yfinance error fetching corporate actions for {symbol!r}: {exc}"
+            ) from exc
+
+        actions: list[CorporateActionDTO] = []
+
+        for ts, ratio in splits.items():
+            if ratio and ratio > 0:
+                actions.append(
+                    CorporateActionDTO(
+                        action_type="split",
+                        ex_date=ts.date(),
+                        ratio=Decimal(str(ratio)),
+                    )
+                )
+
+        for ts, amount in dividends.items():
+            if amount and amount > 0:
+                actions.append(
+                    CorporateActionDTO(
+                        action_type="dividend",
+                        ex_date=ts.date(),
+                        ratio=Decimal(str(amount)),
+                    )
+                )
+
+        actions.sort(key=lambda a: a.ex_date)
+        return actions

@@ -12,12 +12,13 @@ Last Modified By: bvela
 Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; stub with NotImplementedError on all methods.
+    2026-06-09 - Added get_corporate_actions() stub (Sprint 2-B Task 6).
 """
 
 from datetime import date
 
 from app.data_providers.base import FundamentalsProvider, MarketDataProvider
-from app.data_providers.models import Fundamentals, PriceBar, TickerInfo
+from app.data_providers.models import CorporateActionDTO, Fundamentals, PriceBar, TickerInfo
 
 
 class PolygonProvider(MarketDataProvider, FundamentalsProvider):
@@ -70,3 +71,14 @@ class PolygonProvider(MarketDataProvider, FundamentalsProvider):
             NotImplementedError: Always. Implement in a future sprint.
         """
         raise NotImplementedError("PolygonProvider.get_fundamentals is not yet implemented")
+
+    async def get_corporate_actions(self, symbol: str) -> list[CorporateActionDTO]:
+        """Not implemented — Polygon integration is deferred.
+
+        Args:
+            symbol: Exchange ticker symbol.
+
+        Raises:
+            NotImplementedError: Always. Implement in a future sprint.
+        """
+        raise NotImplementedError("PolygonProvider.get_corporate_actions is not yet implemented")

@@ -4,13 +4,14 @@ Description: Abstract base classes (ABCs) that define the data-provider contract
              interfaces, which enforces Dependency Inversion: higher-level modules
              (services, repositories) depend on these abstractions, never on a
              specific provider library.
-             MarketDataProvider handles OHLCV price data.
+             MarketDataProvider handles OHLCV price data and corporate actions.
              FundamentalsProvider handles financial statement data and key ratios.
              A single class may implement both (e.g. YFinanceProvider does).
 Last Modified By: bvela
 Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; added MarketDataProvider and FundamentalsProvider ABCs.
+    2026-06-09 - Added get_corporate_actions() to MarketDataProvider (Sprint 2-B Task 6).
 """
 
 from abc import ABC, abstractmethod
@@ -19,7 +20,7 @@ from datetime import date
 from app.data_providers.exceptions import (
     TickerNotFoundError,  # noqa: F401 (re-exported for callers)
 )
-from app.data_providers.models import Fundamentals, PriceBar, TickerInfo
+from app.data_providers.models import CorporateActionDTO, Fundamentals, PriceBar, TickerInfo
 
 
 class MarketDataProvider(ABC):
@@ -65,6 +66,23 @@ class MarketDataProvider(ABC):
         Returns:
             List of PriceBar objects ordered oldest-first. May be empty if no
             trading data exists for the requested range (e.g. weekends).
+
+        Raises:
+            TickerNotFoundError: If the symbol does not exist in this provider.
+            ProviderError: On transient failures.
+        """
+
+    @abstractmethod
+    async def get_corporate_actions(self, symbol: str) -> list[CorporateActionDTO]:
+        """Fetch the full history of splits and dividends for a symbol.
+
+        Args:
+            symbol: Exchange ticker symbol.
+
+        Returns:
+            List of CorporateActionDTO objects (splits and dividends combined),
+            ordered by ex_date ascending. May be empty if the provider has no
+            corporate-action history for this symbol.
 
         Raises:
             TickerNotFoundError: If the symbol does not exist in this provider.

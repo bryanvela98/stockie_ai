@@ -9,11 +9,25 @@ Last Modified By: bvela
 Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; added TickerInfo, PriceBar, and Fundamentals.
+    2026-06-09 - Added CorporateActionDTO (Sprint 2-B Task 6).
 """
 
 from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, Field
+
+
+class CorporateActionDTO(BaseModel):
+    """A single corporate-action event returned by a data provider.
+
+    `ratio` holds the split ratio (e.g. Decimal('2.0') for a 2-for-1 split)
+    or the cash dividend amount per share in the ticker's native currency.
+    """
+
+    action_type: str = Field(description="'split' or 'dividend'.")
+    ex_date: date = Field(description="Ex-dividend or ex-split date.")
+    ratio: Decimal = Field(description="Split ratio or dividend amount per share.")
 
 
 class TickerInfo(BaseModel):
