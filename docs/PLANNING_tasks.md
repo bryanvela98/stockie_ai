@@ -158,11 +158,13 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@despinoza` Integrate TradingView Lightweight Charts (or chosen lib) on the ticker page.
 - [x] `@despinoza` Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint.
 - [x] `@despinoza` "Data as of" badge component, used across the app.
-- [ ] `@both` Pair on at least one tricky bug; document any provider quirks in `backend/app/data_providers/README.md`.
+- [x] `@both` Pair on at least one tricky bug; document any provider quirks in `backend/app/data_providers/README.md`.
 
 **Retro:**
 
-> _What shipped:_ _What slipped:_ _What to change:_
+> _What shipped:_ All 13 tasks completed. Full ingestion pipeline: Celery + Redis, daily OHLCV and quarterly fundamentals beat tasks, corporate-actions sync (splits + dividends with adjusted-close recomputation), TimescaleDB hypertable conversion, backfill CLI, `GET /tickers/{symbol}/prices` with keyset cursor pagination. Frontend: TradingView Lightweight Charts v5 candlestick chart, timeframe toggle (1D–Max), DataAsOf badge, and TickerPriceSection client island. Provider quirks documented in `backend/app/data_providers/README.md`; tricky bug: `auto_adjust=False` required to separate raw close from adjusted close, plus a `"Adj Close" in df.columns` guard for tickers where Yahoo omits the adjusted series entirely.
+> _What slipped:_ Nothing.
+> _What to change:_ `lib/api/schema.d.ts` is manually maintained because `npm run generate` requires the backend server to be running locally. Add a CI step that starts the server, runs `npm run generate`, and fails if the generated output differs from the committed file.
 
 ---
 
