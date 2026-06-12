@@ -23,9 +23,9 @@
 | 7 | ✅ | @bvela | Corporate-actions handling: store splits and dividends, expose adjusted-close |
 | 8 | ✅ | @bvela | "As-of" timestamp threaded through every endpoint response |
 | 9 | ✅ | @bvela | Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness |
-| 10 | ⬜ | @despinoza | Integrate TradingView Lightweight Charts on the ticker page |
-| 11 | ⬜ | @despinoza | Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint |
-| 12 | ⬜ | @despinoza | "Data as of" badge component, used across the app |
+| 10 | ✅ | @despinoza | Integrate TradingView Lightweight Charts on the ticker page |
+| 11 | ✅ | @despinoza | Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint |
+| 12 | ✅ | @despinoza | "Data as of" badge component, used across the app |
 
 ---
 
@@ -124,8 +124,13 @@
 
 | `components/ticker-result-item.tsx` | `TickerResultItem` — symbol chip, name, asset-type badge (color-coded), exchange |
 | `components/ticker-search-bar.tsx` | `TickerSearchBar` — debounced (300ms), keyboard nav (↑↓Enter Esc), ARIA combobox |
-| `app/tickers/[symbol]/page.tsx` | Ticker detail page — server component; metadata card + 3 placeholder sections |
-| `lib/api/schema.d.ts` | Extended with `/tickers/search` + `/tickers/{symbol}` paths + `TickerSearchResult/Response` schemas |
+| `app/tickers/[symbol]/page.tsx` | Ticker detail page — server component; metadata card + price section client island |
+| `lib/api/schema.d.ts` | All paths + schemas: search, detail, prices (`PriceBarItem`, `PriceBarPageResponse`) |
+| `lib/types/timeframe.ts` | `Timeframe` union type + `timeframeToDateRange()` helper |
+| `components/timeframe-toggle.tsx` | 7-button segmented toggle (1D/1W/1M/3M/1Y/5Y/Max) |
+| `components/data-as-of-badge.tsx` | Muted freshness badge; renders "Data unavailable" fallback when null |
+| `components/price-chart.tsx` | TradingView Lightweight Charts v5 candlestick chart; loading skeleton + empty state |
+| `components/ticker-price-section.tsx` | Client island: fetches prices, composes chart + toggle + badge |
 
 **Stack:** Next.js 14.2 (App Router) + TypeScript + Tailwind CSS + ESLint + Prettier + shadcn/ui
 
@@ -195,4 +200,4 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 ## Next sprint preview
 
-**Sprint 2 (Weeks 5–6) — BACKEND COMPLETE:** All backend tasks done (Tasks 1–9 ✅). Three frontend tasks remain for @despinoza (Tasks 10–12: TradingView charts, timeframe toggle, data-as-of badge). See `.claude/plans/sprint2-prices-api-and-frontend.md` for the frontend plan.
+**Sprint 2 (Weeks 5–6) — COMPLETE ✅:** All 12 tasks done. Backend ingestion pipeline, prices API endpoint, and frontend chart UI are fully implemented.

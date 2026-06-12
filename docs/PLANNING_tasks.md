@@ -155,9 +155,9 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` Corporate-actions handling: store splits and dividends, expose adjusted-close.
 - [x] `@bvela` "As-of" timestamp threaded through every endpoint response.
 - [x] `@bvela` Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness.
-- [ ] `@despinoza` Integrate TradingView Lightweight Charts (or chosen lib) on the ticker page.
-- [ ] `@despinoza` Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint.
-- [ ] `@despinoza` "Data as of" badge component, used across the app.
+- [x] `@despinoza` Integrate TradingView Lightweight Charts (or chosen lib) on the ticker page.
+- [x] `@despinoza` Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint.
+- [x] `@despinoza` "Data as of" badge component, used across the app.
 - [ ] `@both` Pair on at least one tricky bug; document any provider quirks in `backend/app/data_providers/README.md`.
 
 **Retro:**
