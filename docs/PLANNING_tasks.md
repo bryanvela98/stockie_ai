@@ -151,7 +151,7 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios.
 - [x] `@bvela` Backfill script: load N years of history for the initial universe.
 - [x] `@bvela` Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)`.
-- [ ] `@bvela` `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint with sane pagination/limits.
+- [x] `@bvela` `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint with sane pagination/limits.
 - [x] `@bvela` Corporate-actions handling: store splits and dividends, expose adjusted-close.
 - [x] `@bvela` "As-of" timestamp threaded through every endpoint response.
 - [x] `@bvela` Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness.

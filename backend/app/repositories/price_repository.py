@@ -12,7 +12,8 @@ Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; upsert_bars and get_bars methods.
-    2026-06-09 - Added get_latest_timestamp() for data_as_of support (Sprint 2-B Task 8).
+    2026-06-09 - Added get_latest_timestamp() for data_as_of support.
+    2026-06-11 - Added limit and after_ts params to get_bars for keyset pagination.
 """
 
 from datetime import UTC, date, datetime, timedelta
@@ -118,6 +119,8 @@ class PriceRepository:
         start: date,
         end: date,
         interval: str = "1d",
+        limit: int | None = None,
+        after_ts: datetime | None = None,
     ) -> list[PriceBarModel]:
         """Return ORM PriceBar rows for a ticker in a date range.
 
@@ -128,6 +131,10 @@ class PriceRepository:
             end: Last date to include (inclusive).
             interval: Bar granularity filter. Only rows with this interval
                 are returned.
+            limit: Maximum number of rows to return. No cap applied when None.
+            after_ts: Exclusive lower-bound on timestamp used for keyset
+                pagination. When provided, only bars strictly after this
+                timestamp are returned (overrides start for the lower bound).
 
         Returns:
             List of PriceBar ORM instances ordered oldest-first.
@@ -136,16 +143,27 @@ class PriceRepository:
         # end is inclusive: shift to start of next day to capture all bars on that date
         end_dt = datetime(end.year, end.month, end.day, tzinfo=UTC) + timedelta(days=1)
 
-        result = await self._session.execute(
+        # Keyset cursor takes precedence over the date-based lower bound
+        lower_op = (
+            PriceBarModel.timestamp > after_ts
+            if after_ts is not None
+            else PriceBarModel.timestamp >= start_dt
+        )
+
+        stmt = (
             select(PriceBarModel)
             .where(
                 PriceBarModel.ticker_id == ticker_id,
                 PriceBarModel.interval == interval,
-                PriceBarModel.timestamp >= start_dt,
+                lower_op,
                 PriceBarModel.timestamp < end_dt,
             )
             .order_by(PriceBarModel.timestamp)
         )
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
+        result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_latest_timestamp(self, ticker_id: int) -> datetime | None:

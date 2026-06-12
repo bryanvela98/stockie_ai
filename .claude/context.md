@@ -19,7 +19,7 @@
 | 3 | ✅ | @bvela | `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios |
 | 4 | ✅ | @bvela | Backfill script: load N years of history for the initial universe |
 | 5 | ✅ | @bvela | Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)` |
-| 6 | ⬜ | @bvela | `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint |
+| 6 | ✅ | @bvela | `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint |
 | 7 | ✅ | @bvela | Corporate-actions handling: store splits and dividends, expose adjusted-close |
 | 8 | ✅ | @bvela | "As-of" timestamp threaded through every endpoint response |
 | 9 | ✅ | @bvela | Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness |
@@ -88,7 +88,7 @@
 | `tests/repositories/test_price_repository.py` | 6 tests — upsert idempotency, range query, interval filter |
 | `pyproject.toml` | uv project; runtime + dev deps; ruff/black/mypy/pytest config |
 
-| `app/api/v1/tickers.py` | `GET /tickers/search?q=` + `GET /tickers/{symbol}`; `TickerSearchResult` + `TickerSearchResponse` Pydantic models |
+| `app/api/v1/tickers.py` | `GET /tickers/search?q=` + `GET /tickers/{symbol}` + `GET /tickers/{symbol}/prices`; full set of Pydantic response models including `PriceBarItem` + `PriceBarPageResponse` |
 | `tests/test_tickers.py` | 8 endpoint tests with SQLite `get_db` override; covers search, case-insensitivity, 404, 422 |
 
 | `app/workers/__init__.py` | Barrel export for `celery_app` |
@@ -195,4 +195,4 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 ## Next sprint preview
 
-**Sprint 2 (Weeks 5–6) — NEARLY COMPLETE:** All backend ingestion tasks done (Tasks 1–5, 7–9 ✅). One backend task remaining: `GET /tickers/{symbol}/prices` endpoint (Task 6). Three frontend tasks remain for @despinoza (Tasks 10–12: TradingView charts, timeframe toggle, data-as-of badge). See `.claude/plans/sprint2-prices-api-and-frontend.md` for the prices endpoint plan.
+**Sprint 2 (Weeks 5–6) — BACKEND COMPLETE:** All backend tasks done (Tasks 1–9 ✅). Three frontend tasks remain for @despinoza (Tasks 10–12: TradingView charts, timeframe toggle, data-as-of badge). See `.claude/plans/sprint2-prices-api-and-frontend.md` for the frontend plan.

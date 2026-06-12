@@ -1,20 +1,23 @@
 """
 Description: Tickers API router.
-             Exposes two endpoints for the ticker resolution feature:
-               GET /tickers/search?q= — prefix search on symbol and name
-               GET /tickers/{symbol}  — single-ticker lookup by symbol
-             Both endpoints delegate to TickerRepository and return Pydantic
-             response models so FastAPI generates accurate OpenAPI types for
-             the frontend schema.d.ts auto-generation step.
+             Exposes endpoints for ticker resolution and price data:
+               GET /tickers/search?q=           — prefix search on symbol and name
+               GET /tickers/{symbol}            — single-ticker lookup by symbol
+               GET /tickers/{symbol}/prices     — paginated OHLCV bars with optional
+                                                  timeframe, date-range, and cursor
+             All endpoints delegate to the appropriate repository and return Pydantic
+             response models so FastAPI generates accurate OpenAPI types for the
+             frontend schema.d.ts auto-generation step.
 Last Modified By: bvela
 Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; search and detail endpoints.
-    2026-06-09 - Added data_as_of field to TickerSearchResult and GET /{symbol} handler
-                 (Sprint 2-B Task 8).
+    2026-06-09 - Added data_as_of field to TickerSearchResult and GET /{symbol} handler.
+    2026-06-11 - Added GET /{symbol}/prices endpoint with cursor-based pagination.
 """
 
-from datetime import datetime
+import base64
+from datetime import UTC, date, datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -54,7 +57,67 @@ class TickerSearchResponse(BaseModel):
     total: int
 
 
+class PriceBarItem(BaseModel):
+    """A single OHLCV candlestick bar.
+
+    Field names are compact for wire efficiency. `low` is spelled out to avoid
+    the ambiguous single-letter name `l`.
+    """
+
+    t: datetime
+    o: float
+    h: float
+    low: float
+    c: float
+    v: int
+    adj_c: float | None = None
+
+
+class PriceBarPageResponse(BaseModel):
+    """Paginated OHLCV response for a single ticker and timeframe."""
+
+    symbol: str
+    timeframe: str
+    data_as_of: datetime | None = None
+    bars: list[PriceBarItem]
+    next_cursor: str | None = None
+
+
+_MAX_LIMIT = 2000
+_DEFAULT_LIMIT = 500
+_VALID_TIMEFRAMES = {"1d", "1w", "1mo"}
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def _encode_cursor(ts: datetime) -> str:
+    """Encode a UTC datetime as a URL-safe base64 cursor string.
+
+    Args:
+        ts: Timestamp of the last returned bar.
+
+    Returns:
+        A base64url-encoded ISO 8601 string safe for use as a query parameter.
+    """
+    return base64.urlsafe_b64encode(ts.isoformat().encode()).decode()
+
+
+def _decode_cursor(cursor: str) -> datetime | None:
+    """Decode a cursor string back to a UTC datetime.
+
+    Args:
+        cursor: Value previously returned in `next_cursor`.
+
+    Returns:
+        The decoded datetime, or None if the cursor is malformed.
+    """
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode()).decode()
+        dt = datetime.fromisoformat(raw)
+        return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+    except Exception:
+        return None
 
 
 def _to_result(ticker: Ticker) -> TickerSearchResult:
@@ -142,3 +205,110 @@ async def get_ticker(
     result = _to_result(ticker)
     result.data_as_of = data_as_of
     return result
+
+
+@router.get(
+    "/{symbol}/prices",
+    response_model=PriceBarPageResponse,
+    summary="Get paginated OHLCV price bars for a ticker",
+)
+async def get_ticker_prices(
+    symbol: str,
+    timeframe: str = Query(default="1d", description="Bar granularity: '1d', '1w', or '1mo'"),
+    from_date: date = Query(
+        alias="from", description="Start date (inclusive), ISO format YYYY-MM-DD"
+    ),
+    to_date: date = Query(alias="to", description="End date (inclusive), ISO format YYYY-MM-DD"),
+    limit: int = Query(
+        default=_DEFAULT_LIMIT,
+        ge=1,
+        le=_MAX_LIMIT,
+        description=f"Maximum bars per page. Max {_MAX_LIMIT}.",
+    ),
+    cursor: str | None = Query(default=None, description="Opaque cursor for the next page"),
+    db: AsyncSession = Depends(get_db),
+) -> PriceBarPageResponse:
+    """Return paginated OHLCV candlestick bars for a ticker.
+
+    Bars are ordered oldest-first. When a `next_cursor` is present in the
+    response, pass it as `cursor` in the next request to retrieve the
+    following page.
+
+    Args:
+        symbol: Exchange ticker symbol, e.g. 'AAPL'.
+        timeframe: Bar granularity stored in price_bars.interval. Defaults to '1d'.
+        from_date: Inclusive start date for the query window.
+        to_date: Inclusive end date for the query window.
+        limit: Maximum number of bars to return per page.
+        cursor: Opaque pagination cursor returned by a previous response.
+        db: Injected async database session.
+
+    Returns:
+        PriceBarPageResponse containing bars and an optional next_cursor.
+
+    Raises:
+        HTTPException 400: If from_date > to_date or timeframe is invalid.
+        HTTPException 404: If no ticker with the given symbol exists.
+    """
+    _log.debug(
+        "ticker prices", symbol=symbol, timeframe=timeframe, from_date=from_date, to_date=to_date
+    )
+
+    if timeframe not in _VALID_TIMEFRAMES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid timeframe '{timeframe}'. Must be one of: {', '.join(sorted(_VALID_TIMEFRAMES))}",
+        )
+    if from_date > to_date:
+        raise HTTPException(status_code=400, detail="'from' must not be later than 'to'")
+
+    ticker_repo = TickerRepository(db)
+    ticker = await ticker_repo.get_by_symbol(symbol)
+    if ticker is None:
+        raise HTTPException(status_code=404, detail=f"Ticker not found: '{symbol.upper()}'")
+
+    price_repo = PriceRepository(db)
+
+    after_ts: datetime | None = None
+    if cursor is not None:
+        after_ts = _decode_cursor(cursor)
+        if after_ts is None:
+            raise HTTPException(status_code=400, detail="Invalid cursor")
+
+    # Fetch one extra bar to detect whether a next page exists.
+    rows = await price_repo.get_bars(
+        ticker.id,
+        from_date,
+        to_date,
+        interval=timeframe,
+        limit=limit + 1,
+        after_ts=after_ts,
+    )
+
+    has_next = len(rows) > limit
+    page = rows[:limit]
+
+    next_cursor = _encode_cursor(page[-1].timestamp) if has_next and page else None
+
+    data_as_of = await price_repo.get_latest_timestamp(ticker.id)
+
+    bars = [
+        PriceBarItem(
+            t=row.timestamp,
+            o=float(row.open),
+            h=float(row.high),
+            low=float(row.low),
+            c=float(row.close),
+            v=row.volume,
+            adj_c=float(row.adjusted_close) if row.adjusted_close is not None else None,
+        )
+        for row in page
+    ]
+
+    return PriceBarPageResponse(
+        symbol=symbol.upper(),
+        timeframe=timeframe,
+        data_as_of=data_as_of,
+        bars=bars,
+        next_cursor=next_cursor,
+    )
