@@ -2,22 +2,32 @@
  * Description: Ticker detail page — server component.
  *              Fetches GET /tickers/{symbol} at request time and renders a
  *              metadata card (symbol, name, exchange, asset type, sector,
- *              industry) plus placeholder sections for the features arriving
- *              in future sprints (price chart, fundamentals, sentiment).
+ *              industry) and a price chart island (client component wrapped
+ *              with dynamic ssr:false to avoid lightweight-charts SSR issues).
  *              Returns a descriptive 404 message when the symbol is unknown.
  * Last Modified By: despinoza
  * Created: 2026-06-01
  * Last Modified:
  *     2026-06-01 - File created; Sprint 1 skeleton with metadata card and
  *                  placeholder sections.
+ *     2026-06-11 - Replaced Price Chart placeholder with TickerPriceSection
+ *                  client island (candlestick chart + timeframe toggle + DataAsOf badge).
  */
 
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import { apiClient } from "@/lib/api";
 import type { components } from "@/lib/api/schema.d.ts";
 import { cn } from "@/lib/utils";
+
+// Dynamic import avoids SSR for the price chart (lightweight-charts needs the DOM).
+const TickerPriceSection = dynamic(
+  () =>
+    import("@/components/ticker-price-section").then((m) => ({ default: m.TickerPriceSection })),
+  { ssr: false },
+);
 
 type TickerSearchResult = components["schemas"]["TickerSearchResult"];
 
@@ -137,7 +147,7 @@ export default async function TickerPage({ params }: { params: { symbol: string 
 
       <TickerHeader ticker={data} />
 
-      <PlaceholderSection title="Price Chart" sprint="Sprint 2" />
+      <TickerPriceSection symbol={symbol} />
       <PlaceholderSection title="Fundamentals" sprint="Sprint 3" />
       <PlaceholderSection title="Sentiment" sprint="Sprint 5" />
     </main>
