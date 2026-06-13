@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "source": "Apple Inc. public financial filings (10-K) via yfinance",
+    "pinned_on": "2026-06-12",
+    "fiscal_year_end_month": "September",
+    "currency": "USD",
+    "note": "All currency amounts in whole USD. capital_expenditure is negative (cash outflow convention). FY2021-FY2024 annual statements; snapshot is TTM as of 2024-09-28."
+  },
+  "snapshot": {
+    "ticker_id": 1,
+    "as_of": "2024-09-28",
+    "pe_ratio": "34.50",
+    "pb_ratio": "60.40",
+    "ps_ratio": "8.95",
+    "ev_ebitda": "27.60",
+    "eps_ttm": "6.08",
+    "revenue_ttm": 391035000000,
+    "net_income_ttm": 93736000000,
+    "roe": "1.47",
+    "debt_to_equity": "150.0",
+    "dividend_yield": "0.0043"
+  },
+  "annual_statements": [
+    {
+      "fiscal_year": 2024,
+      "total_revenue": 391035000000,
+      "gross_profit": 180683000000,
+      "operating_income": 123216000000,
+      "net_income": 93736000000,
+      "interest_expense": 3930000000,
+      "eps_diluted": 6.08,
+      "total_assets": 364980000000,
+      "total_equity": 56950000000,
+      "total_debt": 96630000000,
+      "cash_and_equivalents": 65170000000,
+      "operating_cash_flow": 118254000000,
+      "capital_expenditure": -9447000000,
+      "shares_diluted": 15408000000
+    },
+    {
+      "fiscal_year": 2023,
+      "total_revenue": 383285000000,
+      "gross_profit": 169148000000,
+      "operating_income": 114301000000,
+      "net_income": 96995000000,
+      "interest_expense": 3933000000,
+      "eps_diluted": 6.13,
+      "total_assets": 352583000000,
+      "total_equity": 62146000000,
+      "total_debt": 111130000000,
+      "cash_and_equivalents": 61555000000,
+      "operating_cash_flow": 113930000000,
+      "capital_expenditure": -10959000000,
+      "shares_diluted": 15812000000
+    },
+    {
+      "fiscal_year": 2022,
+      "total_revenue": 394328000000,
+      "gross_profit": 170782000000,
+      "operating_income": 119437000000,
+      "net_income": 99803000000,
+      "interest_expense": 2830000000,
+      "eps_diluted": 6.11,
+      "total_assets": 352755000000,
+      "total_equity": 50672000000,
+      "total_debt": 110621000000,
+      "cash_and_equivalents": 48304000000,
+      "operating_cash_flow": 122151000000,
+      "capital_expenditure": -10708000000,
+      "shares_diluted": 16326000000
+    },
+    {
+      "fiscal_year": 2021,
+      "total_revenue": 365817000000,
+      "gross_profit": 152836000000,
+      "operating_income": 108949000000,
+      "net_income": 94680000000,
+      "interest_expense": 2645000000,
+      "eps_diluted": 5.61,
+      "total_assets": 351002000000,
+      "total_equity": 63090000000,
+      "total_debt": 109106000000,
+      "cash_and_equivalents": 62639000000,
+      "operating_cash_flow": 104038000000,
+      "capital_expenditure": -11085000000,
+      "shares_diluted": 16864000000
+    }
+  ],
+  "golden_scores": {
+    "_note": "Pre-computed with WEIGHTS_VERSION=v1.0. Tolerances are ±1.0 on 0-100 scores.",
+    "value": 8.27,
+    "quality": 86.49,
+    "growth": 25.65,
+    "overall": 40.86
+  }
+}
