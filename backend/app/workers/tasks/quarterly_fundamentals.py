@@ -12,7 +12,8 @@ Description: Celery task that fetches and upserts the latest fundamental
 Last Modified By: bvela
 Created: 2026-06-09
 Last Modified:
-    2026-06-09 - File created; run_quarterly_fundamentals task (Sprint 2-B Task 5).
+    2026-06-09 - File created; run_quarterly_fundamentals task.
+    2026-06-12 - Added annual financial-statement ingest alongside the TTM snapshot.
 """
 
 import asyncio
@@ -23,6 +24,10 @@ import structlog
 
 from app.data_providers.exceptions import ProviderError
 from app.data_providers.yfinance_provider import YFinanceProvider
+from app.repositories.financial_statement_repository import (
+    FinancialStatementCreate,
+    FinancialStatementRepository,
+)
 from app.repositories.fundamentals_repository import FundamentalsCreate, FundamentalsRepository
 from app.repositories.ticker_repository import TickerRepository
 from app.workers.celery_app import celery_app
@@ -45,6 +50,7 @@ async def _ingest_quarterly_fundamentals() -> None:
     async with AsyncSessionLocal() as session:
         tickers = await TickerRepository(session).get_all_active()
         fund_repo = FundamentalsRepository(session)
+        stmt_repo = FinancialStatementRepository(session)
 
         for ticker in tickers:
             try:
@@ -72,6 +78,43 @@ async def _ingest_quarterly_fundamentals() -> None:
             except ProviderError as exc:
                 _log.warning(
                     "quarterly_fundamentals.provider_error",
+                    symbol=ticker.symbol,
+                    error=str(exc),
+                )
+
+            # Annual statements — fetched separately so a failure here doesn't
+            # roll back the TTM snapshot already written above.
+            try:
+                annual_stmts = await provider.get_annual_financials(ticker.symbol)
+                for annual in annual_stmts:
+                    stmt_create = FinancialStatementCreate(
+                        ticker_id=ticker.id,
+                        fiscal_year=annual.fiscal_year,
+                        currency=annual.currency,
+                        total_revenue=annual.total_revenue,
+                        gross_profit=annual.gross_profit,
+                        operating_income=annual.operating_income,
+                        net_income=annual.net_income,
+                        interest_expense=annual.interest_expense,
+                        eps_diluted=_to_decimal(annual.eps_diluted),
+                        total_assets=annual.total_assets,
+                        total_equity=annual.total_equity,
+                        total_debt=annual.total_debt,
+                        cash_and_equivalents=annual.cash_and_equivalents,
+                        operating_cash_flow=annual.operating_cash_flow,
+                        capital_expenditure=annual.capital_expenditure,
+                        shares_diluted=annual.shares_diluted,
+                    )
+                    await stmt_repo.upsert(stmt_create)
+                if annual_stmts:
+                    _log.info(
+                        "quarterly_fundamentals.statements_ingested",
+                        symbol=ticker.symbol,
+                        years=len(annual_stmts),
+                    )
+            except ProviderError as exc:
+                _log.warning(
+                    "quarterly_fundamentals.statements_provider_error",
                     symbol=ticker.symbol,
                     error=str(exc),
                 )
