@@ -172,14 +172,14 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 
 **Goal:** A ticker shows a full fundamentals view with a 0–100 fundamental score broken into Value / Quality / Growth.
 
-- [ ] `@bvela` Implement ratio calculations: P/E, P/B, P/S, EV/EBITDA, PEG, dividend yield.
-- [ ] `@bvela` Implement quality metrics: ROE, ROIC, margins, debt/equity, interest coverage.
-- [ ] `@bvela` Implement growth metrics: revenue/EPS/FCF CAGR (1Y/3Y/5Y).
-- [ ] `@bvela` `scoring/fundamental.py`: deterministic, documented weighting → Value/Quality/Growth subscores + overall.
+- [x] `@bvela` Implement ratio calculations: P/E, P/B, P/S, EV/EBITDA, PEG, dividend yield.
+- [x] `@bvela` Implement quality metrics: ROE, ROIC, margins, debt/equity, interest coverage.
+- [x] `@bvela` Implement growth metrics: revenue/EPS/FCF CAGR (1Y/3Y/5Y).
+- [x] `@bvela` `scoring/fundamental.py`: deterministic, documented weighting → Value/Quality/Growth subscores + overall.
 - [ ] `@bvela` Simplified DCF endpoint with adjustable assumptions (growth, discount, terminal).
 - [ ] `@bvela` Peer-comparison endpoint: auto-pick 3–5 peers by sector + market-cap bucket.
 - [ ] `@bvela` Cache fundamental scores in Redis with a daily TTL.
-- [ ] `@bvela` Unit tests with golden numbers for known tickers (e.g. AAPL Q4 2025).
+- [x] `@bvela` Unit tests with golden numbers for known tickers (AAPL FY2021–2024, 187 tests green).
 - [ ] `@despinoza` Fundamentals tab on ticker page: ratios table, subscore radar/bar chart, peer comparison table.
 - [ ] `@despinoza` Interactive DCF widget (sliders → live recalc via endpoint).
 - [ ] `@despinoza` Score badge component (consistent 0–100 visual, reused across modules).

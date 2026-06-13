@@ -6,26 +6,34 @@
 
 ---
 
-## Active sprint: Sprint 2 — Ingestion pipeline + price storage (Weeks 5–6)
+## Active sprint: Sprint 3 — Fundamental analysis module (Weeks 7–8)
 
-**Goal:** Scheduled jobs pull daily OHLCV and quarterly fundamentals into Postgres. Time-series queries are fast.
+**Goal:** A ticker shows a full fundamentals view with a 0–100 fundamental score broken into Value / Quality / Growth.
 
-### Checklist
+### Checklist (Sprint 3-A — metrics + scoring engine)
 
 | # | Status | Owner | Task |
 |---|--------|-------|------|
-| 1 | ✅ | @bvela | Add Celery + Redis broker; one worker container in `docker-compose` |
-| 2 | ✅ | @bvela | `daily_prices` Celery beat task: fetch + upsert OHLCV for all tracked tickers |
-| 3 | ✅ | @bvela | `quarterly_fundamentals` Celery beat task: pull income/balance/cashflow + key ratios |
-| 4 | ✅ | @bvela | Backfill script: load N years of history for the initial universe |
-| 5 | ✅ | @bvela | Convert `price_bars` table to TimescaleDB hypertable; add compound index `(ticker_id, timestamp)` |
-| 6 | ✅ | @bvela | `GET /tickers/{symbol}/prices?timeframe=1d&from=...&to=...` endpoint |
-| 7 | ✅ | @bvela | Corporate-actions handling: store splits and dividends, expose adjusted-close |
-| 8 | ✅ | @bvela | "As-of" timestamp threaded through every endpoint response |
-| 9 | ✅ | @bvela | Tests: ingestion idempotency (re-run doesn't duplicate), split-adjustment correctness |
-| 10 | ✅ | @despinoza | Integrate TradingView Lightweight Charts on the ticker page |
-| 11 | ✅ | @despinoza | Timeframe toggle (1D/1W/1M/3M/1Y/5Y/Max) hitting the prices endpoint |
-| 12 | ✅ | @despinoza | "Data as of" badge component, used across the app |
+| A1 | ✅ | @bvela | `FinancialStatement` ORM model + Alembic migration |
+| A2 | ✅ | @bvela | `AnnualFinancials` DTO + `get_annual_financials()` in providers |
+| A3 | ✅ | @bvela | `FinancialStatementRepository` (upsert + history) |
+| A4 | ✅ | @bvela | Ingest annual statements in `quarterly_fundamentals` beat task |
+| A5 | ✅ | @bvela | `services/fundamentals/ratios.py` — valuation ratio calculators |
+| A6 | ✅ | @bvela | `services/fundamentals/quality.py` — quality metric calculators |
+| A7 | ✅ | @bvela | `services/fundamentals/growth.py` — CAGR growth calculators |
+| A8 | ✅ | @bvela | `scoring/fundamental.py` — subscores + overall (WEIGHTS_VERSION v1.0) |
+| A9 | ✅ | @bvela | Golden-number tests for AAPL fixture (`tests/scoring/test_golden_aapl.py`) |
+
+### Checklist (Sprint 3-B — API + caching, upcoming)
+
+| # | Status | Owner | Task |
+|---|--------|-------|------|
+| B1 | [ ] | @bvela | Simplified DCF endpoint with adjustable assumptions |
+| B2 | [ ] | @bvela | Peer-comparison endpoint (3–5 peers by sector + market-cap bucket) |
+| B3 | [ ] | @bvela | Cache fundamental scores in Redis (daily TTL) |
+| B4 | [ ] | @despinoza | Fundamentals tab: ratios table, subscore bar chart, peer comparison |
+| B5 | [ ] | @despinoza | Interactive DCF widget (sliders → live recalc) |
+| B6 | [ ] | @despinoza | Score badge component (0–100 visual, reused across modules) |
 
 ---
 
@@ -104,6 +112,25 @@
 | `app/data_providers/models.py` | `CorporateActionDTO` added alongside TickerInfo, PriceBar, Fundamentals |
 | `scripts/backfill.py` | CLI: `--years N --symbols A,B --dry-run --delay`. Idempotent backfill of OHLCV history. |
 | `backend/Dockerfile` | Multi-stage build (uv); used by worker and beat services in docker-compose |
+
+| `app/models/financial_statement.py` | `FinancialStatement` ORM model — one row per `(ticker_id, fiscal_year, period_type)`; income + balance + cashflow line items |
+| `alembic/versions/20260612_d4e8b1f9a205_add_financial_statements.py` | Migration: creates `financial_statements` table with FK, unique constraint, index |
+| `app/data_providers/models.py` | `AnnualFinancials` Pydantic DTO added (all statement line items) |
+| `app/data_providers/yfinance_provider.py` | `get_annual_financials()` added; `_row()` multi-label fallback helper for yfinance label quirks |
+| `app/repositories/financial_statement_repository.py` | `FinancialStatementRepository` — idempotent `upsert()`, `get_history()` ordered newest-first |
+| `app/services/__init__.py` + `app/services/fundamentals/__init__.py` | Package init files for pure services layer (no DB, no network) |
+| `app/services/fundamentals/ratios.py` | `ValuationRatios` dataclass + calculators: pe, pb, ps, ev_ebitda, dividend_yield, peg |
+| `app/services/fundamentals/quality.py` | `QualityMetrics` dataclass + calculators: ROE, ROIC, margins, D/E, interest coverage; `DEFAULT_TAX_RATE = 0.21` |
+| `app/services/fundamentals/growth.py` | `GrowthMetrics` dataclass + calculators: revenue/EPS/FCF CAGR 1Y/3Y/5Y; `_best_effort_5y()` degrades gracefully |
+| `app/scoring/__init__.py` | Package init for scoring module |
+| `app/scoring/fundamental.py` | `FundamentalScore`, `normalize()`, `score_value/quality/growth()`, `score_fundamental()`; `WEIGHTS_VERSION = "v1.0"` |
+| `tests/fixtures/aapl_fundamentals.json` | Frozen AAPL fixture (FY2021–FY2024 + TTM snapshot) with golden scores for determinism contract |
+| `tests/scoring/test_fundamental.py` | 20 unit tests: normalize, renormalization, monotonicity, score_fundamental |
+| `tests/scoring/test_golden_aapl.py` | 8 golden-number tests: full pipeline on AAPL fixture, ±1.0 tolerance on subscores + overall |
+| `tests/repositories/test_financial_statement_repository.py` | 6 repo tests: upsert, idempotency, update, ordering, limit, empty |
+| `tests/services/fundamentals/test_ratios.py` | 18 ratio tests |
+| `tests/services/fundamentals/test_quality.py` | 26 quality tests |
+| `tests/services/fundamentals/test_growth.py` | 14 growth tests |
 
 **Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
@@ -200,4 +227,8 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 ## Next sprint preview
 
-**Sprint 2 (Weeks 5–6) — COMPLETE ✅:** All 12 tasks done. Backend ingestion pipeline, prices API endpoint, and frontend chart UI are fully implemented.
+**Sprint 2 (Weeks 5–6) — COMPLETE ✅:** All 12 tasks done. Backend ingestion pipeline, prices API endpoint, and frontend chart UI fully implemented.
+
+**Sprint 3-A (Weeks 7–8) — COMPLETE ✅:** All 9 tasks done. Annual financial-statement storage, pure metric calculators (ratios/quality/growth), deterministic scoring engine (WEIGHTS_VERSION v1.0), and AAPL golden-number tests. 187 tests green, pre-commit clean.
+
+**Sprint 3-B (next):** DCF endpoint, peer-comparison endpoint, Redis caching, and the Fundamentals tab + DCF widget UI.
