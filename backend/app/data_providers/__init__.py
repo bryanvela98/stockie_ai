@@ -8,13 +8,15 @@ Last Modified By: bvela
 Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; barrel export for interfaces, models, exceptions.
+    2026-06-12 - Exported AnnualFinancials DTO.
 """
 
 from app.data_providers.base import FundamentalsProvider, MarketDataProvider
 from app.data_providers.exceptions import ProviderError, TickerNotFoundError
-from app.data_providers.models import Fundamentals, PriceBar, TickerInfo
+from app.data_providers.models import AnnualFinancials, Fundamentals, PriceBar, TickerInfo
 
 __all__ = [
+    "AnnualFinancials",
     "FundamentalsProvider",
     "Fundamentals",
     "MarketDataProvider",

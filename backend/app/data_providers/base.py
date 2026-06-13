@@ -11,7 +11,8 @@ Last Modified By: bvela
 Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; added MarketDataProvider and FundamentalsProvider ABCs.
-    2026-06-09 - Added get_corporate_actions() to MarketDataProvider (Sprint 2-B Task 6).
+    2026-06-09 - Added get_corporate_actions() to MarketDataProvider.
+    2026-06-12 - Added get_annual_financials() to FundamentalsProvider.
 """
 
 from abc import ABC, abstractmethod
@@ -20,7 +21,13 @@ from datetime import date
 from app.data_providers.exceptions import (
     TickerNotFoundError,  # noqa: F401 (re-exported for callers)
 )
-from app.data_providers.models import CorporateActionDTO, Fundamentals, PriceBar, TickerInfo
+from app.data_providers.models import (
+    AnnualFinancials,
+    CorporateActionDTO,
+    Fundamentals,
+    PriceBar,
+    TickerInfo,
+)
 
 
 class MarketDataProvider(ABC):
@@ -108,6 +115,28 @@ class FundamentalsProvider(ABC):
         Returns:
             A Fundamentals value object. Financial fields that the provider
             does not supply will be None.
+
+        Raises:
+            TickerNotFoundError: If the symbol does not exist in this provider.
+            ProviderError: On transient failures.
+        """
+
+    @abstractmethod
+    async def get_annual_financials(self, symbol: str, years: int = 5) -> list[AnnualFinancials]:
+        """Fetch annual financial statement line items for a symbol.
+
+        Returns up to `years` fiscal years of income statement, balance sheet,
+        and cash flow data. Results are ordered newest-first. Fewer years than
+        requested may be returned when the provider's history is shorter.
+
+        Args:
+            symbol: Exchange ticker symbol.
+            years: Maximum number of fiscal years to return. Defaults to 5.
+
+        Returns:
+            List of AnnualFinancials objects ordered newest-first (most recent
+            fiscal year first). May be empty for asset types that lack financial
+            statements (e.g. ETFs).
 
         Raises:
             TickerNotFoundError: If the symbol does not exist in this provider.

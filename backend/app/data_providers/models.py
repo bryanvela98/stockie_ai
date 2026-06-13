@@ -9,13 +9,58 @@ Last Modified By: bvela
 Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; added TickerInfo, PriceBar, and Fundamentals.
-    2026-06-09 - Added CorporateActionDTO (Sprint 2-B Task 6).
+    2026-06-09 - Added CorporateActionDTO.
+    2026-06-12 - Added AnnualFinancials DTO.
 """
 
 from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
+
+
+class AnnualFinancials(BaseModel):
+    """One fiscal year of financial statement line items for a ticker.
+
+    Columns are sourced from yfinance annual income_stmt, balance_sheet, and
+    cashflow DataFrames. All financial fields are optional because coverage
+    varies by asset type (ETFs often have no income statement data) and because
+    yfinance row labels are inconsistent across tickers. Callers must handle None.
+
+    `fiscal_year` is the calendar year in which the fiscal period ends (e.g.
+    Apple FY2024 ends September 2024, so fiscal_year = 2024).
+    """
+
+    fiscal_year: int = Field(description="Calendar year in which the fiscal period ends.")
+    currency: str | None = Field(default=None, description="Reporting currency (ISO 4217).")
+
+    # Income statement
+    total_revenue: int | None = Field(
+        default=None, description="Total revenue in reporting currency."
+    )
+    gross_profit: int | None = Field(default=None, description="Gross profit.")
+    operating_income: int | None = Field(default=None, description="Operating income (EBIT).")
+    net_income: int | None = Field(default=None, description="Net income attributable to common.")
+    interest_expense: int | None = Field(
+        default=None, description="Interest expense (positive = cost)."
+    )
+    eps_diluted: float | None = Field(default=None, description="Diluted earnings per share.")
+
+    # Balance sheet
+    total_assets: int | None = Field(default=None, description="Total assets.")
+    total_equity: int | None = Field(default=None, description="Total stockholders' equity.")
+    total_debt: int | None = Field(default=None, description="Total debt (short + long term).")
+    cash_and_equivalents: int | None = Field(default=None, description="Cash and cash equivalents.")
+
+    # Cash flow
+    operating_cash_flow: int | None = Field(default=None, description="Net cash from operations.")
+    capital_expenditure: int | None = Field(
+        default=None,
+        description="Capital expenditure (usually negative in yfinance; stored as-is).",
+    )
+
+    # Share count
+    shares_diluted: int | None = Field(default=None, description="Diluted weighted average shares.")
 
 
 class CorporateActionDTO(BaseModel):

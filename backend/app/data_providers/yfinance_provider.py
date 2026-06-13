@@ -14,7 +14,8 @@ Created: 2026-05-31
 Last Modified:
     2026-05-31 - File created; implemented YFinanceProvider with get_ticker_info,
                  get_price_bars, and get_fundamentals.
-    2026-06-09 - Added get_corporate_actions() (Sprint 2-B Task 6).
+    2026-06-09 - Added get_corporate_actions().
+    2026-06-12 - Added get_annual_financials().
 """
 
 import asyncio
@@ -23,11 +24,18 @@ from datetime import UTC, date
 from decimal import Decimal
 from typing import Any
 
+import pandas as pd
 import yfinance as yf
 
 from app.data_providers.base import FundamentalsProvider, MarketDataProvider
 from app.data_providers.exceptions import ProviderError, TickerNotFoundError
-from app.data_providers.models import CorporateActionDTO, Fundamentals, PriceBar, TickerInfo
+from app.data_providers.models import (
+    AnnualFinancials,
+    CorporateActionDTO,
+    Fundamentals,
+    PriceBar,
+    TickerInfo,
+)
 
 
 def _float_or_none(value: object) -> float | None:
@@ -60,6 +68,30 @@ def _int_or_none(value: object) -> int | None:
     """
     f = _float_or_none(value)
     return None if f is None else int(f)
+
+
+def _row(df: pd.DataFrame, col: Any, *labels: str) -> object:
+    """Extract a cell from a statement DataFrame by trying labels in order.
+
+    yfinance row labels are inconsistent across tickers (e.g. 'Operating Income'
+    vs 'EBIT', 'Stockholders Equity' vs 'Common Stock Equity'). This helper
+    tries each label in priority order and returns the first match, or None when
+    none of the labels are present in the DataFrame index.
+
+    Args:
+        df: Annual statement DataFrame (rows = line items, cols = fiscal periods).
+        col: Column (fiscal-year-end Timestamp) to read from.
+        *labels: Row label candidates in priority order.
+
+    Returns:
+        The raw cell value if a matching label is found, otherwise None.
+    """
+    if col not in df.columns:
+        return None
+    for label in labels:
+        if label in df.index:
+            return df.at[label, col]
+    return None
 
 
 class YFinanceProvider(MarketDataProvider, FundamentalsProvider):
@@ -284,3 +316,83 @@ class YFinanceProvider(MarketDataProvider, FundamentalsProvider):
 
         actions.sort(key=lambda a: a.ex_date)
         return actions
+
+    async def get_annual_financials(self, symbol: str, years: int = 5) -> list[AnnualFinancials]:
+        """Fetch annual financial statement line items from Yahoo Finance.
+
+        Reads income_stmt, balance_sheet, and cashflow DataFrames (annual
+        frequency). Each DataFrame column is a fiscal-year-end Timestamp; the
+        DataFrames are aligned by that timestamp. Up to `years` columns are
+        returned, ordered newest-first.
+
+        yfinance label quirks are handled by _row(), which tries multiple
+        alternative row labels in priority order.
+
+        Args:
+            symbol: Exchange ticker symbol.
+            years: Maximum number of fiscal years to return. Defaults to 5.
+
+        Returns:
+            List of AnnualFinancials objects ordered newest-first. May be empty
+            for ETFs or any ticker where Yahoo Finance has no statement data.
+
+        Raises:
+            ProviderError: On network or parse failures.
+        """
+
+        def _fetch() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, str | None]:
+            t = yf.Ticker(symbol)
+            currency: str | None = (t.info or {}).get("currency")
+            return t.income_stmt, t.balance_sheet, t.cashflow, currency
+
+        try:
+            income, balance, cashflow, currency = await asyncio.to_thread(_fetch)
+        except Exception as exc:
+            raise ProviderError(
+                f"yfinance error fetching annual financials for {symbol!r}: {exc}"
+            ) from exc
+
+        if income is None or income.empty:
+            return []
+
+        # Columns are fiscal-year-end Timestamps, newest first
+        cols = income.columns[:years]
+
+        results: list[AnnualFinancials] = []
+        for col in cols:
+            results.append(
+                AnnualFinancials(
+                    fiscal_year=col.year,
+                    currency=currency,
+                    total_revenue=_int_or_none(_row(income, col, "Total Revenue")),
+                    gross_profit=_int_or_none(_row(income, col, "Gross Profit")),
+                    operating_income=_int_or_none(_row(income, col, "Operating Income", "EBIT")),
+                    net_income=_int_or_none(_row(income, col, "Net Income")),
+                    interest_expense=_int_or_none(_row(income, col, "Interest Expense")),
+                    eps_diluted=_float_or_none(_row(income, col, "Diluted EPS")),
+                    total_assets=_int_or_none(_row(balance, col, "Total Assets")),
+                    total_equity=_int_or_none(
+                        _row(
+                            balance,
+                            col,
+                            "Stockholders Equity",
+                            "Common Stock Equity",
+                            "Total Equity Gross Minority Interest",
+                        )
+                    ),
+                    total_debt=_int_or_none(_row(balance, col, "Total Debt")),
+                    cash_and_equivalents=_int_or_none(
+                        _row(
+                            balance,
+                            col,
+                            "Cash And Cash Equivalents",
+                            "Cash Cash Equivalents And Short Term Investments",
+                        )
+                    ),
+                    operating_cash_flow=_int_or_none(_row(cashflow, col, "Operating Cash Flow")),
+                    capital_expenditure=_int_or_none(_row(cashflow, col, "Capital Expenditure")),
+                    shares_diluted=_int_or_none(_row(income, col, "Diluted Average Shares")),
+                )
+            )
+
+        return results

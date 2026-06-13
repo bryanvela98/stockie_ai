@@ -8,6 +8,7 @@ Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; 7 test cases covering get_ticker_info,
                  get_price_bars, and get_fundamentals.
+    2026-06-12 - Added 4 test cases for get_annual_financials.
 """
 
 from datetime import UTC, date, datetime
@@ -183,3 +184,190 @@ async def test_get_fundamentals_nan_fields_become_none() -> None:
     # Fields entirely absent from the dict also map to None
     assert result.market_cap is None
     assert result.revenue_ttm is None
+
+
+# ── get_annual_financials ─────────────────────────────────────────────────────
+
+
+def _make_statement_dfs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Build minimal mocked annual income_stmt, balance_sheet, cashflow DataFrames."""
+    # Columns = fiscal-year-end Timestamps (newest first, as yfinance returns them)
+    cols = pd.to_datetime(["2024-09-28", "2023-09-30"])
+
+    income = pd.DataFrame(
+        {
+            cols[0]: [
+                391_035_000_000,
+                169_148_000_000,
+                93_736_000_000,
+                97_150_000_000,
+                23_000_000_000,
+                6.56,
+                15_408_000_000,
+            ],
+            cols[1]: [
+                383_285_000_000,
+                158_123_000_000,
+                87_000_000_000,
+                90_000_000_000,
+                22_000_000_000,
+                6.10,
+                15_500_000_000,
+            ],
+        },
+        index=[
+            "Total Revenue",
+            "Gross Profit",
+            "Operating Income",
+            "Net Income",
+            "Interest Expense",
+            "Diluted EPS",
+            "Diluted Average Shares",
+        ],
+    )
+
+    balance = pd.DataFrame(
+        {
+            cols[0]: [364_980_000_000, 74_194_000_000, 106_629_000_000, 55_827_000_000],
+            cols[1]: [352_583_000_000, 62_146_000_000, 110_000_000_000, 51_000_000_000],
+        },
+        index=["Total Assets", "Stockholders Equity", "Total Debt", "Cash And Cash Equivalents"],
+    )
+
+    cashflow = pd.DataFrame(
+        {
+            cols[0]: [116_433_000_000, -9_447_000_000],
+            cols[1]: [110_543_000_000, -10_959_000_000],
+        },
+        index=["Operating Cash Flow", "Capital Expenditure"],
+    )
+
+    return income, balance, cashflow
+
+
+@pytest.mark.asyncio
+async def test_get_annual_financials_returns_list_ordered_newest_first() -> None:
+    """Happy path: two fiscal years returned newest-first with correct values."""
+    income, balance, cashflow = _make_statement_dfs()
+    with patch("app.data_providers.yfinance_provider.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.income_stmt = income
+        mock_ticker.return_value.balance_sheet = balance
+        mock_ticker.return_value.cashflow = cashflow
+        mock_ticker.return_value.info = {"currency": "USD"}
+
+        result = await YFinanceProvider().get_annual_financials("AAPL", years=5)
+
+    assert len(result) == 2
+    latest = result[0]
+    assert latest.fiscal_year == 2024
+    assert latest.currency == "USD"
+    assert latest.total_revenue == 391_035_000_000
+    assert latest.gross_profit == 169_148_000_000
+    assert latest.operating_income == 93_736_000_000
+    assert latest.net_income == 97_150_000_000
+    assert latest.eps_diluted == pytest.approx(6.56)
+    assert latest.total_assets == 364_980_000_000
+    assert latest.total_equity == 74_194_000_000
+    assert latest.total_debt == 106_629_000_000
+    assert latest.operating_cash_flow == 116_433_000_000
+    assert latest.capital_expenditure == -9_447_000_000
+
+
+@pytest.mark.asyncio
+async def test_get_annual_financials_nan_becomes_none() -> None:
+    """NaN values in statement DataFrames must map to None, not raise."""
+    cols = pd.to_datetime(["2024-09-28"])
+    income = pd.DataFrame(
+        {
+            cols[0]: [
+                float("nan"),
+                float("nan"),
+                float("nan"),
+                float("nan"),
+                float("nan"),
+                float("nan"),
+                float("nan"),
+            ]
+        },
+        index=[
+            "Total Revenue",
+            "Gross Profit",
+            "Operating Income",
+            "Net Income",
+            "Interest Expense",
+            "Diluted EPS",
+            "Diluted Average Shares",
+        ],
+    )
+    balance = pd.DataFrame(
+        {cols[0]: [float("nan")] * 4},
+        index=["Total Assets", "Stockholders Equity", "Total Debt", "Cash And Cash Equivalents"],
+    )
+    cashflow = pd.DataFrame(
+        {cols[0]: [float("nan"), float("nan")]},
+        index=["Operating Cash Flow", "Capital Expenditure"],
+    )
+
+    with patch("app.data_providers.yfinance_provider.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.income_stmt = income
+        mock_ticker.return_value.balance_sheet = balance
+        mock_ticker.return_value.cashflow = cashflow
+        mock_ticker.return_value.info = {"currency": "USD"}
+
+        result = await YFinanceProvider().get_annual_financials("AAPL")
+
+    assert len(result) == 1
+    stmt = result[0]
+    assert stmt.total_revenue is None
+    assert stmt.operating_income is None
+    assert stmt.eps_diluted is None
+
+
+@pytest.mark.asyncio
+async def test_get_annual_financials_empty_for_etf_with_no_statements() -> None:
+    """When income_stmt is empty (e.g. ETF), return an empty list."""
+    with patch("app.data_providers.yfinance_provider.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.income_stmt = pd.DataFrame()
+        mock_ticker.return_value.balance_sheet = pd.DataFrame()
+        mock_ticker.return_value.cashflow = pd.DataFrame()
+        mock_ticker.return_value.info = {"currency": "USD"}
+
+        result = await YFinanceProvider().get_annual_financials("SPY")
+
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_annual_financials_uses_alternative_label_for_equity() -> None:
+    """Stockholders Equity fallback: uses 'Common Stock Equity' when primary label absent."""
+    cols = pd.to_datetime(["2024-09-28"])
+    income = pd.DataFrame(
+        {cols[0]: [100_000_000, 50_000_000, 20_000_000, 15_000_000, 1_000_000, 2.5, 6_000_000]},
+        index=[
+            "Total Revenue",
+            "Gross Profit",
+            "Operating Income",
+            "Net Income",
+            "Interest Expense",
+            "Diluted EPS",
+            "Diluted Average Shares",
+        ],
+    )
+    # Use alternative equity label instead of "Stockholders Equity"
+    balance = pd.DataFrame(
+        {cols[0]: [200_000_000, 40_000_000, 30_000_000, 10_000_000]},
+        index=["Total Assets", "Common Stock Equity", "Total Debt", "Cash And Cash Equivalents"],
+    )
+    cashflow = pd.DataFrame(
+        {cols[0]: [25_000_000, -5_000_000]}, index=["Operating Cash Flow", "Capital Expenditure"]
+    )
+
+    with patch("app.data_providers.yfinance_provider.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.income_stmt = income
+        mock_ticker.return_value.balance_sheet = balance
+        mock_ticker.return_value.cashflow = cashflow
+        mock_ticker.return_value.info = {}
+
+        result = await YFinanceProvider().get_annual_financials("XYZ")
+
+    assert result[0].total_equity == 40_000_000

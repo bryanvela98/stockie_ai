@@ -137,6 +137,52 @@ concurrent requests for the duration of the network round-trip (typically
 
 ---
 
+### Quirk 8 — Annual statement row labels are inconsistent across tickers
+
+`yf.Ticker.income_stmt`, `.balance_sheet`, and `.cashflow` are DataFrames where
+**rows are line-item labels** and **columns are fiscal-year-end Timestamps**.
+The same metric may appear under different labels for different tickers:
+
+| Metric | Primary label | Alternative labels |
+|--------|--------------|-------------------|
+| Operating income | `"Operating Income"` | `"EBIT"` |
+| Stockholders' equity | `"Stockholders Equity"` | `"Common Stock Equity"`, `"Total Equity Gross Minority Interest"` |
+| Cash | `"Cash And Cash Equivalents"` | `"Cash Cash Equivalents And Short Term Investments"` |
+
+**Pattern used in `get_annual_financials()`:**
+
+```python
+def _row(df, col, *labels):
+    for label in labels:
+        if label in df.index:
+            return df.at[label, col]
+    return None
+```
+
+Always pass the most specific / common label first, then fallbacks. A missing
+label degrades to `None` rather than raising `KeyError`.
+
+---
+
+### Quirk 9 — `capital_expenditure` is negative in yfinance cashflow statements
+
+Yahoo Finance reports capital expenditure as a **negative number** (cash
+outflow convention). The raw value is stored as-is in `AnnualFinancials` and
+`financial_statements.capital_expenditure`. Callers computing FCF must account
+for this:
+
+```python
+# Correct: capex is already negative, so subtract it (adding a negative = subtracting)
+fcf = operating_cash_flow + capital_expenditure
+
+# Wrong: double-counting the sign
+fcf = operating_cash_flow - capital_expenditure
+```
+
+The growth calculator in `services/fundamentals/growth.py` handles this correctly.
+
+---
+
 ## PolygonProvider
 
 Currently a stub that raises `NotImplementedError` on all methods.  It exists
