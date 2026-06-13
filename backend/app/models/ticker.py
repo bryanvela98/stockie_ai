@@ -10,7 +10,8 @@ Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; Ticker model with relationships to PriceBar and
                  Fundamentals.
-    2026-06-09 - Added corporate_actions relationship (Sprint 2-B Task 1).
+    2026-06-09 - Added corporate_actions relationship.
+    2026-06-12 - Added financial_statements relationship.
 """
 
 from datetime import datetime
@@ -23,6 +24,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.corporate_action import CorporateAction
+    from app.models.financial_statement import FinancialStatement
     from app.models.fundamentals import Fundamentals
     from app.models.price_bar import PriceBar
 
@@ -60,6 +62,9 @@ class Ticker(Base):
     )
     corporate_actions: Mapped[list["CorporateAction"]] = relationship(
         "CorporateAction", back_populates="ticker", cascade="all, delete-orphan"
+    )
+    financial_statements: Mapped[list["FinancialStatement"]] = relationship(
+        "FinancialStatement", back_populates="ticker", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
