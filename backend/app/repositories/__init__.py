@@ -9,16 +9,19 @@ Last Modified:
     2026-06-01 - File created; barrel export for TickerRepository and
                  PriceRepository.
     2026-06-09 - Added CorporateActionRepository (Sprint 2-B Task 2).
-    2026-06-09 - Added FundamentalsRepository (Sprint 2-B Task 3).
+    2026-06-09 - Added FundamentalsRepository.
+    2026-06-12 - Added FinancialStatementRepository.
 """
 
 from app.repositories.corporate_action_repository import CorporateActionRepository
+from app.repositories.financial_statement_repository import FinancialStatementRepository
 from app.repositories.fundamentals_repository import FundamentalsRepository
 from app.repositories.price_repository import PriceRepository
 from app.repositories.ticker_repository import TickerRepository
 
 __all__ = [
     "CorporateActionRepository",
+    "FinancialStatementRepository",
     "FundamentalsRepository",
     "PriceRepository",
     "TickerRepository",
