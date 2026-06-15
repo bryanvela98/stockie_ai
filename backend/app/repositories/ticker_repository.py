@@ -10,6 +10,7 @@ Created: 2026-06-01
 Last Modified:
     2026-06-01 - File created; get_by_symbol, get_by_id, upsert, search.
     2026-06-09 - Added get_all_active() for Celery ingestion tasks (Sprint 2-B Task 4).
+    2026-06-13 - Added get_by_sector() for peer-comparison service.
 """
 
 from sqlalchemy import func, select
@@ -105,6 +106,29 @@ class TickerRepository:
         """
         result = await self._session.execute(
             select(Ticker).where(Ticker.is_active.is_(True)).order_by(Ticker.symbol)
+        )
+        return list(result.scalars().all())
+
+    async def get_by_sector(self, sector: str, exclude_id: int) -> list[Ticker]:
+        """Return all active Tickers in the given sector, excluding one ticker.
+
+        Used by the peer-comparison service to fetch candidate peers.
+
+        Args:
+            sector: Sector string to filter on (exact match, case-sensitive).
+            exclude_id: Primary key of the subject ticker to exclude from results.
+
+        Returns:
+            List of Ticker rows in the sector, ordered by symbol.
+        """
+        result = await self._session.execute(
+            select(Ticker)
+            .where(
+                Ticker.sector == sector,
+                Ticker.id != exclude_id,
+                Ticker.is_active.is_(True),
+            )
+            .order_by(Ticker.symbol)
         )
         return list(result.scalars().all())
 

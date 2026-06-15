@@ -7,6 +7,7 @@ Created: 2026-05-22
 Last Modified:
     2026-05-22 - File created; registered /health router and structured logging setup.
     2026-06-01 - Registered tickers router with /tickers prefix.
+    2026-06-13 - Registered fundamentals router (fundamentals, DCF, peers endpoints).
 """
 
 from collections.abc import AsyncIterator
@@ -15,6 +16,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 
+from app.api.v1.fundamentals import router as fundamentals_router
 from app.api.v1.health import router as health_router
 from app.api.v1.tickers import router as tickers_router
 from app.core.config import get_settings
@@ -61,6 +63,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health_router)
     application.include_router(tickers_router, prefix="/tickers")
+    application.include_router(fundamentals_router, prefix="/tickers")
 
     return application
 
