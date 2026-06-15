@@ -31,9 +31,9 @@
 | B1 | ✅ | @bvela | Simplified DCF endpoint with adjustable assumptions |
 | B2 | ✅ | @bvela | Peer-comparison endpoint (3–5 peers by sector + market-cap bucket) |
 | B3 | ✅ | @bvela | Cache fundamental scores in Redis (daily TTL) |
-| B4 | [ ] | @despinoza | Fundamentals tab: ratios table, subscore bar chart, peer comparison |
-| B5 | [ ] | @despinoza | Interactive DCF widget (sliders → live recalc) |
-| B6 | [ ] | @despinoza | Score badge component (0–100 visual, reused across modules) |
+| B4 | ✅ | @bvela | Fundamentals tab: ratios table, subscore bar chart, peer comparison |
+| B5 | ✅ | @bvela | Interactive DCF widget (sliders → live recalc) |
+| B6 | ✅ | @bvela | Score badge component (0–100 visual, reused across modules) |
 
 ---
 
@@ -169,6 +169,15 @@
 | `components/data-as-of-badge.tsx` | Muted freshness badge; renders "Data unavailable" fallback when null |
 | `components/price-chart.tsx` | TradingView Lightweight Charts v5 candlestick chart; loading skeleton + empty state |
 | `components/ticker-price-section.tsx` | Client island: fetches prices, composes chart + toggle + badge |
+| `lib/api/schema.d.ts` | Extended with FundamentalsResponse, DcfResponse, PeersResponse, RatioBlock, QualityBlock, GrowthBlock, SubscoreBlock, DcfYearItem, PeerItem |
+| `components/score-badge.tsx` | Color-coded 0–100 badge; SCORE_HIGH=70 / SCORE_LOW=40 thresholds exported for reuse |
+| `components/subscore-chart.tsx` | Horizontal bar chart for Value / Quality / Growth subscores with matching color bands |
+| `components/peer-comparison-table.tsx` | Client island: fetches /peers, renders Symbol / Market Cap / P/E / P/B / Score table |
+| `components/ui/slider.tsx` | Accessible labeled range input primitive used by DcfWidget |
+| `components/dcf-widget.tsx` | Interactive DCF with 4 sliders, 250ms debounce, client-side validation, FCF bar chart |
+| `components/fundamentals-section.tsx` | Client island: fetches /fundamentals, composes all sub-components into the full view |
+| `components/ticker-tabs.tsx` | Price | Fundamentals tab bar (ARIA roles, no extra library) |
+| `app/tickers/[symbol]/page.tsx` | Updated: TickerTabs replaces direct TickerPriceSection; Sentiment placeholder retained |
 
 **Stack:** Next.js 14.2 (App Router) + TypeScript + Tailwind CSS + ESLint + Prettier + shadcn/ui
 
@@ -244,4 +253,6 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 **Sprint 3-B (backend) — COMPLETE ✅:** Redis cache helper, FundamentalsService (cache-through), DCF service + endpoint, peer-comparison service + endpoint, fundamentals endpoint. 228 tests green, pre-commit clean.
 
-**Sprint 3-B (frontend — next):** Fundamentals tab (ratios table, subscore bar chart, peer comparison), interactive DCF widget, and score badge component.
+**Sprint 3-C (frontend) — COMPLETE ✅:** ScoreBadge, SubscoreChart, PeerComparisonTable, Slider, DcfWidget, FundamentalsSection, TickerTabs, and page.tsx integration. Lint + build clean. All 6 frontend components committed.
+
+**Sprint 4 (next):** Sentiment module — news ingestion, NLP scoring, and sentiment tab UI.

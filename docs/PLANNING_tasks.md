@@ -180,13 +180,15 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` Peer-comparison endpoint: auto-pick 3–5 peers by sector + market-cap bucket.
 - [x] `@bvela` Cache fundamental scores in Redis with a daily TTL.
 - [x] `@bvela` Unit tests with golden numbers for known tickers (AAPL FY2021–2024, 228 tests green).
-- [ ] `@despinoza` Fundamentals tab on ticker page: ratios table, subscore radar/bar chart, peer comparison table.
-- [ ] `@despinoza` Interactive DCF widget (sliders → live recalc via endpoint).
-- [ ] `@despinoza` Score badge component (consistent 0–100 visual, reused across modules).
+- [x] `@bvela` Fundamentals tab on ticker page: ratios table, subscore bar chart, peer comparison table.
+- [x] `@bvela` Interactive DCF widget (sliders → live recalc via endpoint).
+- [x] `@bvela` Score badge component (consistent 0–100 visual, reused across modules).
 
 **Retro:**
 
-> _What shipped:_ _What slipped:_ _What to change:_
+> _What shipped:_ Full fundamental analysis pipeline (backend + frontend). 228 tests, ScoreBadge, SubscoreChart, PeerComparisonTable, Slider, DcfWidget, FundamentalsSection, TickerTabs. Lint + build clean.
+> _What slipped:_ Nothing.
+> _What to change:_ —
 
 ---
 
