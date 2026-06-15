@@ -24,13 +24,13 @@
 | A8 | ✅ | @bvela | `scoring/fundamental.py` — subscores + overall (WEIGHTS_VERSION v1.0) |
 | A9 | ✅ | @bvela | Golden-number tests for AAPL fixture (`tests/scoring/test_golden_aapl.py`) |
 
-### Checklist (Sprint 3-B — API + caching, upcoming)
+### Checklist (Sprint 3-B — API + caching)
 
 | # | Status | Owner | Task |
 |---|--------|-------|------|
-| B1 | [ ] | @bvela | Simplified DCF endpoint with adjustable assumptions |
-| B2 | [ ] | @bvela | Peer-comparison endpoint (3–5 peers by sector + market-cap bucket) |
-| B3 | [ ] | @bvela | Cache fundamental scores in Redis (daily TTL) |
+| B1 | ✅ | @bvela | Simplified DCF endpoint with adjustable assumptions |
+| B2 | ✅ | @bvela | Peer-comparison endpoint (3–5 peers by sector + market-cap bucket) |
+| B3 | ✅ | @bvela | Cache fundamental scores in Redis (daily TTL) |
 | B4 | [ ] | @despinoza | Fundamentals tab: ratios table, subscore bar chart, peer comparison |
 | B5 | [ ] | @despinoza | Interactive DCF widget (sliders → live recalc) |
 | B6 | [ ] | @despinoza | Score badge component (0–100 visual, reused across modules) |
@@ -132,6 +132,17 @@
 | `tests/services/fundamentals/test_quality.py` | 26 quality tests |
 | `tests/services/fundamentals/test_growth.py` | 14 growth tests |
 
+| `app/core/cache.py` | Async Redis cache helper: `get_json` / `set_json`; no-op when `redis_url` not set or connection fails |
+| `app/services/fundamentals/service.py` | `FundamentalsService` — orchestrates repo reads → calculators → scorer → cache-through; `FundamentalsResult` frozen dataclass |
+| `app/services/fundamentals/dcf.py` | `DcfService` + pure `_compute_dcf()` — 2-stage DCF with Gordon Growth terminal value; `DcfResult` frozen dataclass |
+| `app/services/fundamentals/peers.py` | `PeerService` — same-sector peer selection ranked by log-scale market-cap proximity; `PeerEntry` frozen dataclass |
+| `app/api/v1/fundamentals.py` | Three endpoints: `GET /{symbol}/fundamentals`, `GET /{symbol}/dcf`, `GET /{symbol}/peers`; full Pydantic response models |
+| `tests/core/test_cache.py` | 8 tests — no-op mode, connection-error degradation, get/set round-trip, setex args |
+| `tests/services/fundamentals/test_service.py` | 7 tests — happy path, no-snapshot 404, no-statements fallback, cache write/read |
+| `tests/services/fundamentals/test_dcf.py` | 7 tests — golden math, negative net debt, zero-shares, service happy path + edge cases |
+| `tests/services/fundamentals/test_peers.py` | 9 tests — bucket/proximity pure helpers, subject exclusion, limit, empty-sector, field presence |
+| `tests/test_fundamentals_endpoint.py` | 10 endpoint integration tests — 200 shape, 404 unknown ticker, 400 bad DCF assumptions, empty-sector peers |
+
 **Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
 
@@ -229,6 +240,8 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 **Sprint 2 (Weeks 5–6) — COMPLETE ✅:** All 12 tasks done. Backend ingestion pipeline, prices API endpoint, and frontend chart UI fully implemented.
 
-**Sprint 3-A (Weeks 7–8) — COMPLETE ✅:** All 9 tasks done. Annual financial-statement storage, pure metric calculators (ratios/quality/growth), deterministic scoring engine (WEIGHTS_VERSION v1.0), and AAPL golden-number tests. 187 tests green, pre-commit clean.
+**Sprint 3-A (Weeks 7–8) — COMPLETE ✅:** All 9 tasks done. Annual financial-statement storage, pure metric calculators (ratios/quality/growth), deterministic scoring engine (WEIGHTS_VERSION v1.0), and AAPL golden-number tests.
 
-**Sprint 3-B (next):** DCF endpoint, peer-comparison endpoint, Redis caching, and the Fundamentals tab + DCF widget UI.
+**Sprint 3-B (backend) — COMPLETE ✅:** Redis cache helper, FundamentalsService (cache-through), DCF service + endpoint, peer-comparison service + endpoint, fundamentals endpoint. 228 tests green, pre-commit clean.
+
+**Sprint 3-B (frontend — next):** Fundamentals tab (ratios table, subscore bar chart, peer comparison), interactive DCF widget, and score badge component.
