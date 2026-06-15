@@ -5,29 +5,24 @@
  *              industry) and a price chart island (client component wrapped
  *              with dynamic ssr:false to avoid lightweight-charts SSR issues).
  *              Returns a descriptive 404 message when the symbol is unknown.
- * Last Modified By: despinoza
+ * Last Modified By: bvela
  * Created: 2026-06-01
  * Last Modified:
  *     2026-06-01 - File created; Sprint 1 skeleton with metadata card and
  *                  placeholder sections.
  *     2026-06-11 - Replaced Price Chart placeholder with TickerPriceSection
  *                  client island (candlestick chart + timeframe toggle + DataAsOf badge).
+ *     2026-06-15 - Replaced direct TickerPriceSection + placeholders with TickerTabs
+ *                  (Price | Fundamentals tab switcher).
  */
 
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import { TickerTabs } from "@/components/ticker-tabs";
 import { apiClient } from "@/lib/api";
 import type { components } from "@/lib/api/schema.d.ts";
 import { cn } from "@/lib/utils";
-
-// Dynamic import avoids SSR for the price chart (lightweight-charts needs the DOM).
-const TickerPriceSection = dynamic(
-  () =>
-    import("@/components/ticker-price-section").then((m) => ({ default: m.TickerPriceSection })),
-  { ssr: false },
-);
 
 type TickerSearchResult = components["schemas"]["TickerSearchResult"];
 
@@ -84,7 +79,7 @@ function TickerHeader({ ticker }: { ticker: TickerSearchResult }) {
 
 function PlaceholderSection({ title, sprint }: { title: string; sprint: string }) {
   return (
-    <section className="mb-6">
+    <section className="mb-6 mt-8">
       <h2 className="mb-2 text-base font-semibold">{title}</h2>
       <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 text-sm text-muted-foreground">
         Coming in {sprint}
@@ -147,8 +142,7 @@ export default async function TickerPage({ params }: { params: { symbol: string 
 
       <TickerHeader ticker={data} />
 
-      <TickerPriceSection symbol={symbol} />
-      <PlaceholderSection title="Fundamentals" sprint="Sprint 3" />
+      <TickerTabs symbol={symbol} />
       <PlaceholderSection title="Sentiment" sprint="Sprint 5" />
     </main>
   );
