@@ -17,6 +17,9 @@ dependencies = [
     "asyncpg>=0.30",
     "alembic>=1.14",
     "yfinance>=0.2",
+    # pandas-ta-classic: numpy 2.x-compatible fork of pandas-ta (upstream 0.3.14b uses
+    # numpy.NaN which was removed in numpy 2.0). Pin here so the team stays on the same fork.
+    "pandas-ta-classic>=0.6",
     "celery[redis]>=5.4",
     "redis>=5.0",
 ]
