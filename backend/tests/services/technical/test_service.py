@@ -337,3 +337,50 @@ async def test_get_indicators_raises_for_unknown_ticker(db_session: AsyncSession
     """get_indicators raises TickerNotFoundError for an unknown symbol."""
     with pytest.raises(TickerNotFoundError):
         await TechnicalService(db_session).get_indicators("UNKNOWN")
+
+
+# ── Cache hardening (B4) ───────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_cache_keys_differ_by_timeframe(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Daily and weekly calls write different cache keys (timeframe is part of the key)."""
+    keys: list[str] = []
+
+    async def capture_set(key: str, *args: object, **kwargs: object) -> None:
+        keys.append(key)
+
+    monkeypatch.setattr("app.services.technical.service.cache.set_json", capture_set)
+
+    ticker = await _seed_ticker(db_session)
+    await _seed_bars(db_session, ticker.id, uptrend_series())
+    await db_session.commit()
+
+    service = TechnicalService(db_session)
+    await service.get_technical("TEST", timeframe="1d")
+    await service.get_technical("TEST", timeframe="1w")
+
+    assert len(keys) == 2
+    assert keys[0] != keys[1], "Daily and weekly must have distinct cache keys"
+    assert "1d" in keys[0] and "1w" in keys[1]
+
+
+@pytest.mark.asyncio
+async def test_to_dict_from_dict_roundtrip(db_session: AsyncSession) -> None:
+    """TechnicalResult serialises and deserialises without data loss."""
+    ticker = await _seed_ticker(db_session)
+    await _seed_bars(db_session, ticker.id, uptrend_series())
+    await db_session.commit()
+
+    original = await TechnicalService(db_session).get_technical("TEST")
+    restored = original.__class__.from_dict(original.to_dict())
+
+    assert restored.symbol == original.symbol
+    assert restored.timeframe == original.timeframe
+    assert restored.score.overall == original.score.overall
+    assert restored.score.trend == original.score.trend
+    assert restored.score.weights_version == original.score.weights_version
+    assert len(restored.levels) == len(original.levels)
+    assert restored.indicators_input.close == original.indicators_input.close
