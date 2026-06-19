@@ -203,10 +203,10 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` `scoring/technical.py`: trend (40%) + momentum (35%) + mean-reversion (25%) → 0–100 `TechnicalScore`; `TECH_WEIGHTS_VERSION = "v1.0"` + 28 unit tests. *(A5)*
 - [x] `@bvela` Synthetic-pattern golden tests: uptrend/downtrend/range/v-reversal/breakout covering full pipeline (indicators → levels → score). *(A6)*
 - [x] `@both` ADR: how Fundamental + Technical scores combine (preview of recommendation engine logic). Logged under §7. *(A7)*
-- [ ] `@bvela` `TechnicalService` — load → resample → compute → cache-through. *(B1)*
-- [ ] `@bvela` `GET /tickers/{symbol}/indicators` (query-string driven) + schemas. *(B2)*
-- [ ] `@bvela` `GET /tickers/{symbol}/technical` — score + subscores + S/R levels. *(B3)*
-- [ ] `@bvela` Multi-timeframe cache + integration goldens + OpenAPI regen. *(B4)*
+- [x] `@bvela` `TechnicalService` — load → resample → compute → cache-through. *(B1)*
+- [x] `@bvela` `GET /tickers/{symbol}/indicators` (query-string driven) + schemas. *(B2)*
+- [x] `@bvela` `GET /tickers/{symbol}/technical` — score + subscores + S/R levels. *(B3)*
+- [x] `@bvela` Multi-timeframe cache + integration goldens + OpenAPI regen. *(B4)*
 - [ ] `@despinoza` Technicals tab: indicator overlays on chart, RSI/MACD subpanes, S/R level lines. *(C1)*
 - [ ] `@despinoza` Indicator settings drawer (toggle/configure indicators per chart). *(C2)*
 - [ ] `@despinoza` Timeframe selector wired to multi-timeframe endpoint. *(C3)*

@@ -31,10 +31,10 @@
 
 | # | Status | Owner | Task |
 |---|--------|-------|------|
-| B1 | [ ] | @bvela | `TechnicalService` — load → resample → compute → cache-through |
-| B2 | [ ] | @bvela | `GET /tickers/{symbol}/indicators` (query-string driven) + schemas |
-| B3 | [ ] | @bvela | `GET /tickers/{symbol}/technical` — score + subscores + S/R levels |
-| B4 | [ ] | @bvela | Multi-timeframe cache + integration goldens + OpenAPI regen |
+| B1 | ✅ | @bvela | `TechnicalService` — load → resample → compute → cache-through |
+| B2 | ✅ | @bvela | `GET /tickers/{symbol}/indicators` (query-string driven) + schemas |
+| B3 | ✅ | @bvela | `GET /tickers/{symbol}/technical` — score + subscores + S/R levels |
+| B4 | ✅ | @bvela | Multi-timeframe cache + integration goldens + OpenAPI regen |
 
 ### Checklist (Sprint 4-C — technicals UI, frontend)
 
@@ -195,6 +195,11 @@
 | `tests/scoring/test_technical.py` | 28 unit tests: normalize, per-subscore, None-signal renormalization, monotonicity, TECH_WEIGHTS_VERSION |
 | `tests/fixtures/synthetic_series.py` | Deterministic price generators: uptrend/downtrend (0.5%/day), range-bound (sin-30), v_reversal, breakout (sin-12 + linear) |
 | `tests/scoring/test_technical_synthetic.py` | 16 golden tests: full pipeline on synthetic patterns; locks direction (uptrend>65, downtrend<35/50) and resampling counts |
+| `app/services/technical/service.py` | `TechnicalService` — `get_technical()` (cache-through, 1h TTL, daily S/R + multi-timeframe) + `get_indicators()` (no cache, opt-in series overlay); `TechnicalResult`, `IndicatorsResult`, `IndicatorBlock`, `MacdBlock`, `BollingerBlock` frozen dataclasses |
+| `app/api/v1/technical.py` | Two endpoints: `GET /{symbol}/indicators` (multi-timeframe, subset, ?series) + `GET /{symbol}/technical` (score + S/R + indicator snapshot); full Pydantic response models |
+| `tests/services/technical/test_service.py` | 19 service tests: structure, uptrend/downtrend direction, cache write/read, 404 paths, thin history, timeframe, case-insensitivity, series, subsets, custom periods, cache-key isolation, to_dict/from_dict roundtrip |
+| `tests/test_technical_endpoint.py` | 16 HTTP integration tests: shape, 200/404/422, series flag, custom params, weekly timeframe, case-insensitive symbol |
+| `frontend/lib/api/schema.d.ts` | Extended with `IndicatorsResponse`, `TechnicalResponse`, `TechnicalScoreResponse`, `SupportResistanceLevelResponse`, `IndicatorBlockResponse`, `MacdBlockResponse`, `BollingerBlockResponse`, `IndicatorsInputResponse` + operations |
 
 **Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`, `pandas-ta-classic`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
