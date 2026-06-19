@@ -1,12 +1,13 @@
 /**
- * Description: Client component that provides "Price" | "Fundamentals" tab navigation
- *              for the ticker detail page. TickerPriceSection is dynamically imported
- *              with ssr:false because lightweight-charts requires the browser DOM.
- *              FundamentalsSection is a standard client island (no DOM-only deps).
+ * Description: Client component that provides "Price" | "Fundamentals" | "Technicals" tab
+ *              navigation for the ticker detail page. TickerPriceSection is dynamically
+ *              imported with ssr:false because lightweight-charts requires the browser DOM.
+ *              FundamentalsSection and TechnicalSection are standard client islands.
  * Last Modified By: bvela
  * Created: 2026-06-15
  * Last Modified:
  *     2026-06-15 - File created; tab switcher for Price and Fundamentals sections.
+ *     2026-06-19 - Added Technicals tab wired to TechnicalSection (Sprint 4-C1).
  */
 
 "use client";
@@ -15,6 +16,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { FundamentalsSection } from "@/components/fundamentals-section";
+import { TechnicalSection } from "@/components/technical-section";
 import { cn } from "@/lib/utils";
 
 // ssr:false is required because lightweight-charts accesses window on module init.
@@ -24,11 +26,12 @@ const TickerPriceSection = dynamic(
   { ssr: false },
 );
 
-type Tab = "price" | "fundamentals";
+type Tab = "price" | "fundamentals" | "technicals";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "price", label: "Price" },
   { id: "fundamentals", label: "Fundamentals" },
+  { id: "technicals", label: "Technicals" },
 ];
 
 interface TickerTabsProps {
@@ -68,7 +71,7 @@ export function TickerTabs({ symbol }: TickerTabsProps) {
         ))}
       </div>
 
-      {/* Tab panels — keep both mounted to preserve chart state on switch */}
+      {/* Tab panels — keep all mounted to preserve chart state on switch */}
       <div
         role="tabpanel"
         id="panel-price"
@@ -84,6 +87,14 @@ export function TickerTabs({ symbol }: TickerTabsProps) {
         hidden={activeTab !== "fundamentals"}
       >
         <FundamentalsSection symbol={symbol} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-technicals"
+        aria-labelledby="tab-technicals"
+        hidden={activeTab !== "technicals"}
+      >
+        <TechnicalSection symbol={symbol} />
       </div>
     </div>
   );
