@@ -6,7 +6,48 @@
 
 ---
 
-## Active sprint: Sprint 3 — Fundamental analysis module (Weeks 7–8)
+## Active sprint: Sprint 4 — Technical analysis module (Weeks 9–10)
+
+**Goal:** A ticker shows technical indicators, support/resistance levels, multi-timeframe views, and a 0–100 technical score (trend / momentum / mean-reversion).
+
+> Plans drafted (mirror the Sprint 3 A/B/C split):
+> `.claude/plans/sprint4-indicators-and-scoring.md` (4-A),
+> `.claude/plans/sprint4-api-indicators-technical.md` (4-B),
+> `.claude/plans/sprint4-frontend-technicals-ui.md` (4-C).
+
+### Checklist (Sprint 4-A — indicators engine + scoring, backend)
+
+| # | Status | Owner | Task |
+|---|--------|-------|------|
+| A1 | ✅ | @bvela | Add `pandas-ta-classic` (numpy 2.x-compatible fork) + `services/technical/` package |
+| A2 | ✅ | @bvela | `indicators.py` — SMA/EMA/RSI/MACD/Bollinger/ATR (pure) |
+| A3 | ✅ | @bvela | `timeframe.py` — multi-timeframe resampler (daily→weekly/monthly) |
+| A4 | ✅ | @bvela | `levels.py` — rule-based support/resistance (pivots + clustering) |
+| A5 | ✅ | @bvela | `scoring/technical.py` — trend + momentum + mean-reversion → 0–100 (TECH_WEIGHTS_VERSION) |
+| A6 | ✅ | @bvela | Synthetic-pattern golden tests (uptrend/downtrend/range/reversal/breakout) |
+| A7 | ✅ | @both | ADR: how Fundamental + Technical scores combine (preview of recommendation engine) |
+
+### Checklist (Sprint 4-B — technical API + caching, backend)
+
+| # | Status | Owner | Task |
+|---|--------|-------|------|
+| B1 | [ ] | @bvela | `TechnicalService` — load → resample → compute → cache-through |
+| B2 | [ ] | @bvela | `GET /tickers/{symbol}/indicators` (query-string driven) + schemas |
+| B3 | [ ] | @bvela | `GET /tickers/{symbol}/technical` — score + subscores + S/R levels |
+| B4 | [ ] | @bvela | Multi-timeframe cache + integration goldens + OpenAPI regen |
+
+### Checklist (Sprint 4-C — technicals UI, frontend)
+
+| # | Status | Owner | Task |
+|---|--------|-------|------|
+| C1 | [ ] | @despinoza | Technicals tab + `TechnicalSection` (score + S/R; reuse ScoreBadge/SubscoreChart) |
+| C2 | [ ] | @despinoza | Granularity selector (Daily/Weekly/Monthly) wired to multi-timeframe endpoint |
+| C3 | [ ] | @despinoza | Indicator overlays (SMA/EMA/Bollinger) + S/R lines on the price chart |
+| C4 | [ ] | @despinoza | RSI/MACD subpanes + indicator settings drawer |
+
+---
+
+## Completed sprint: Sprint 3 — Fundamental analysis module (Weeks 7–8)
 
 **Goal:** A ticker shows a full fundamentals view with a 0–100 fundamental score broken into Value / Quality / Growth.
 
@@ -24,16 +65,16 @@
 | A8 | ✅ | @bvela | `scoring/fundamental.py` — subscores + overall (WEIGHTS_VERSION v1.0) |
 | A9 | ✅ | @bvela | Golden-number tests for AAPL fixture (`tests/scoring/test_golden_aapl.py`) |
 
-### Checklist (Sprint 3-B — API + caching)
+### Checklist (Sprint 3-B — API + caching, backend / Sprint 3-C — fundamentals UI, frontend)
 
 | # | Status | Owner | Task |
 |---|--------|-------|------|
 | B1 | ✅ | @bvela | Simplified DCF endpoint with adjustable assumptions |
 | B2 | ✅ | @bvela | Peer-comparison endpoint (3–5 peers by sector + market-cap bucket) |
 | B3 | ✅ | @bvela | Cache fundamental scores in Redis (daily TTL) |
-| B4 | ✅ | @bvela | Fundamentals tab: ratios table, subscore bar chart, peer comparison |
-| B5 | ✅ | @bvela | Interactive DCF widget (sliders → live recalc) |
-| B6 | ✅ | @bvela | Score badge component (0–100 visual, reused across modules) |
+| C1 | ✅ | @bvela | Score badge component (0–100 visual, reused across modules) |
+| C2 | ✅ | @bvela | Fundamentals tab: ratios table, subscore bar chart, peer comparison |
+| C3 | ✅ | @bvela | Interactive DCF widget (sliders → live recalc) |
 
 ---
 
@@ -143,7 +184,19 @@
 | `tests/services/fundamentals/test_peers.py` | 9 tests — bucket/proximity pure helpers, subject exclusion, limit, empty-sector, field presence |
 | `tests/test_fundamentals_endpoint.py` | 10 endpoint integration tests — 200 shape, 404 unknown ticker, 400 bad DCF assumptions, empty-sector peers |
 
-**Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`
+| `app/services/technical/__init__.py` | Package init for technical indicator backend (uses pandas-ta-classic, numpy 2.x-compatible) |
+| `app/services/technical/indicators.py` | Pure indicator calculators: SMA/EMA/RSI/MACD/Bollinger/ATR; `IndicatorResult`, `MacdResult`, `BollingerResult` frozen dataclasses |
+| `app/services/technical/timeframe.py` | Multi-timeframe resampler: `resample(bars, "1d"/"1w"/"1mo")` → `list[ResampledBar]`; `PriceBarLike` Protocol for duck-typing |
+| `app/services/technical/levels.py` | Support/resistance detection: pivot-high/low detection + ATR-scaled clustering → `SupportResistanceLevel` sorted by strength |
+| `app/scoring/technical.py` | `TechnicalScore`, `IndicatorsInput`, `score_technical()`; `TECH_WEIGHTS_VERSION = "v1.0"`; trend (40%) + momentum (35%) + mean-reversion (25%) |
+| `tests/services/technical/test_indicators.py` | 26 unit tests: SMA/EMA/RSI/MACD/Bollinger/ATR reference values, short-series None guards |
+| `tests/services/technical/test_timeframe.py` | 15 tests: passthrough, weekly/monthly aggregation, partial-period detection, unknown timeframe error |
+| `tests/services/technical/test_levels.py` | 12 tests: double-top/bottom detection, classification, ranking, short-series guard |
+| `tests/scoring/test_technical.py` | 28 unit tests: normalize, per-subscore, None-signal renormalization, monotonicity, TECH_WEIGHTS_VERSION |
+| `tests/fixtures/synthetic_series.py` | Deterministic price generators: uptrend/downtrend (0.5%/day), range-bound (sin-30), v_reversal, breakout (sin-12 + linear) |
+| `tests/scoring/test_technical_synthetic.py` | 16 golden tests: full pipeline on synthetic patterns; locks direction (uptrend>65, downtrend<35/50) and resampling counts |
+
+**Runtime deps:** `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `structlog`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `yfinance`, `celery[redis]`, `redis`, `pandas-ta-classic`
 **Dev deps:** `pytest`, `pytest-asyncio`, `httpx`, `pre-commit`, `ruff`, `black`, `mypy`, `aiosqlite`
 
 ### Frontend (`frontend/`)
@@ -255,4 +308,6 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 **Sprint 3-C (frontend) — COMPLETE ✅:** ScoreBadge, SubscoreChart, PeerComparisonTable, Slider, DcfWidget, FundamentalsSection, TickerTabs, and page.tsx integration. Lint + build clean. All 6 frontend components committed.
 
-**Sprint 4 (next):** Sentiment module — news ingestion, NLP scoring, and sentiment tab UI.
+**Sprint 4 — Technical analysis module (Weeks 9–10) — ACTIVE 🚧:** Indicators (SMA/EMA, RSI, MACD, Bollinger, ATR), rule-based support/resistance, multi-timeframe aggregation, `scoring/technical.py` (trend + momentum + mean-reversion → 0–100), and a Technicals tab (chart overlays, RSI/MACD subpanes, indicator settings drawer). Plans drafted under `.claude/plans/sprint4-*.md`; checklist is the active-sprint section at the top of this file.
+
+**Sprint 5 (next) — News, sentiment & macro/sector module (Weeks 11–12):** News ingestion worker, article→ticker linking, FinBERT sentiment scoring (LLM fallback), per-ticker rolling sentiment, `/news` + `/sentiment` endpoints, FRED macro ingest, sector heatmap, and the News/Sentiment tab + macro dashboard.

@@ -196,16 +196,20 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 
 **Goal:** A ticker shows technical indicators, S/R levels, and a 0–100 technical score.
 
-- [ ] `@bvela` Integrate `pandas-ta` (preferred over TA-Lib for install simplicity).
-- [ ] `@bvela` Indicator endpoints: SMA/EMA, RSI, MACD, Bollinger, ATR — query-string driven.
-- [ ] `@bvela` Rule-based support/resistance detection (pivot points + clustering).
-- [ ] `@bvela` `scoring/technical.py`: trend strength + momentum + mean-reversion → 0–100.
-- [ ] `@bvela` Multi-timeframe aggregator (daily/weekly/monthly resampling, cached).
-- [ ] `@bvela` Tests on synthetic price series with known patterns (uptrend, breakout, reversal).
-- [ ] `@despinoza` Technicals tab: indicator overlays on chart, RSI/MACD subpanes, S/R level lines.
-- [ ] `@despinoza` Indicator settings drawer (toggle/configure indicators per chart).
-- [ ] `@despinoza` Timeframe selector wired to multi-timeframe endpoint.
-- [ ] `@both` Define how Fundamental and Technical scores combine (preview of recommendation engine logic). Log under §7.
+- [x] `@bvela` Integrate `pandas-ta-classic` (numpy 2.x-compatible fork; upstream 0.3.14b breaks on numpy ≥ 2.0). *(A1)*
+- [x] `@bvela` `indicators.py`: pure SMA/EMA/RSI/MACD/Bollinger/ATR calculators + 26 unit tests. *(A2)*
+- [x] `@bvela` `timeframe.py`: daily→weekly/monthly resampler; `PriceBarLike` Protocol for duck-typing + 15 tests. *(A3)*
+- [x] `@bvela` `levels.py`: pivot-high/low detection + ATR-scaled clustering → `SupportResistanceLevel` + 12 tests. *(A4)*
+- [x] `@bvela` `scoring/technical.py`: trend (40%) + momentum (35%) + mean-reversion (25%) → 0–100 `TechnicalScore`; `TECH_WEIGHTS_VERSION = "v1.0"` + 28 unit tests. *(A5)*
+- [x] `@bvela` Synthetic-pattern golden tests: uptrend/downtrend/range/v-reversal/breakout covering full pipeline (indicators → levels → score). *(A6)*
+- [x] `@both` ADR: how Fundamental + Technical scores combine (preview of recommendation engine logic). Logged under §7. *(A7)*
+- [ ] `@bvela` `TechnicalService` — load → resample → compute → cache-through. *(B1)*
+- [ ] `@bvela` `GET /tickers/{symbol}/indicators` (query-string driven) + schemas. *(B2)*
+- [ ] `@bvela` `GET /tickers/{symbol}/technical` — score + subscores + S/R levels. *(B3)*
+- [ ] `@bvela` Multi-timeframe cache + integration goldens + OpenAPI regen. *(B4)*
+- [ ] `@despinoza` Technicals tab: indicator overlays on chart, RSI/MACD subpanes, S/R level lines. *(C1)*
+- [ ] `@despinoza` Indicator settings drawer (toggle/configure indicators per chart). *(C2)*
+- [ ] `@despinoza` Timeframe selector wired to multi-timeframe endpoint. *(C3)*
 
 **Retro:**
 
@@ -383,6 +387,7 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - **2026-05-21** — Approved feature plan (PLANNING_features.md). Locked decisions D1–D7 above.
 - **2026-05-21** — Backend = bvela, frontend = despinoza. Either may pair on the other's area for hard parts (recommendation engine, BVL ingestion).
 - **2026-06-01** — Initial ticker universe for Sprint 2 week-1 ingest: **50 tickers** (45 stocks + 5 ETFs). ETFs: SPY, QQQ, IWM, GLD, TLT. Stocks: 4–5 per GICS sector — IT: AAPL MSFT NVDA AVGO ORCL; Financials: JPM BAC WFC GS; Health Care: UNH JNJ ABBV LLY; Consumer Disc.: AMZN TSLA HD MCD; Industrials: CAT RTX UPS HON; Comm. Services: GOOGL META NFLX DIS; Consumer Staples: PG KO WMT COST; Energy: XOM CVX COP SLB; Real Estate: AMT PLD EQIX O; Materials: LIN APD FCX NEM; Utilities: NEE DUK SO AEP. **This is the seed list only** — the universe is stored in the DB and can be expanded to the full S&P 500 or beyond by inserting more Ticker rows; no code changes needed. Rationale: 50 is small enough for reliable yfinance ingest during Sprint 2 testing and sector-balanced so Sprint 3 peer-comparison has ≥3 neighbors per sector. Approved @both.
+- **2026-06-18** — **Score combination strategy (Sprint 4-A7 ADR):** The recommendation engine (Sprint 6) will combine the Fundamental and Technical scores as a **weighted average**, not a gating/override scheme. Default weights: Fundamental 60%, Technical 40% for a long-term (swing/positional) view; weights are configurable per trading-horizon preset (e.g., day-trade preset: Technical 80%, Fundamental 20%). The Technical score is NOT used to veto a Fundamental signal — that avoids survivorship bias with range-bound/sideways markets where mean-reversion opposes trend. The `TECH_WEIGHTS_VERSION` and `WEIGHTS_VERSION` stamps on every score object mean any stored recommendation can be recomputed when weights change. This decision deliberately defers ML/LLM combination to post-MVP. Approved @bvela.
 - **YYYY-MM-DD** — _Template: brief decision, rationale, who approved._
 
 ---
