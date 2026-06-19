@@ -1,13 +1,14 @@
 /**
- * Description: Horizontal bar chart visualising the three fundamental subscores
- *              (Value / Quality / Growth). Each bar uses the same color thresholds as
- *              ScoreBadge so the visual language is consistent across the app.
- *              Handles null subscores gracefully — the bar is absent and the label
- *              shows a muted dash.
+ * Description: Horizontal bar chart visualising three subscores (e.g. Value / Quality / Growth
+ *              for fundamentals, or Trend / Momentum / Mean Rev. for technicals). Each bar uses
+ *              the same color thresholds as ScoreBadge so the visual language is consistent
+ *              across the app. Handles null subscores gracefully — the bar is absent and the
+ *              label shows a muted dash. Label overrides allow reuse across modules.
  * Last Modified By: bvela
  * Created: 2026-06-15
  * Last Modified:
  *     2026-06-15 - File created; SubscoreChart with colour-coded horizontal bars.
+ *     2026-06-19 - Added optional labels prop to support Technicals (Trend/Momentum/Mean Rev.).
  */
 
 import { cn } from "@/lib/utils";
@@ -17,6 +18,8 @@ interface SubscoreChartProps {
   value: number | null;
   quality: number | null;
   growth: number | null;
+  /** Override the default ["Value", "Quality", "Growth"] labels for reuse in other modules. */
+  labels?: [string, string, string];
 }
 
 interface BarRowProps {
@@ -77,18 +80,24 @@ function BarRow({ label, score }: BarRowProps) {
 }
 
 /**
- * Renders Value, Quality, and Growth subscores as stacked horizontal bars.
+ * Renders three subscores as stacked horizontal bars.
  *
- * @param value   - Value subscore (0–100) or null.
- * @param quality - Quality subscore (0–100) or null.
- * @param growth  - Growth subscore (0–100) or null.
+ * @param value   - First subscore (0–100) or null.
+ * @param quality - Second subscore (0–100) or null.
+ * @param growth  - Third subscore (0–100) or null.
+ * @param labels  - Optional label override; defaults to ["Value", "Quality", "Growth"].
  */
-export function SubscoreChart({ value, quality, growth }: SubscoreChartProps) {
+export function SubscoreChart({
+  value,
+  quality,
+  growth,
+  labels = ["Value", "Quality", "Growth"],
+}: SubscoreChartProps) {
   return (
-    <div className="space-y-3" aria-label="Fundamental subscores">
-      <BarRow label="Value" score={value} />
-      <BarRow label="Quality" score={quality} />
-      <BarRow label="Growth" score={growth} />
+    <div className="space-y-3" aria-label="Subscores">
+      <BarRow label={labels[0]} score={value} />
+      <BarRow label={labels[1]} score={quality} />
+      <BarRow label={labels[2]} score={growth} />
     </div>
   );
 }
