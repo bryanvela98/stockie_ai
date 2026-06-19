@@ -40,10 +40,10 @@
 
 | # | Status | Owner | Task |
 |---|--------|-------|------|
-| C1 | [ ] | @despinoza | Technicals tab + `TechnicalSection` (score + S/R; reuse ScoreBadge/SubscoreChart) |
-| C2 | [ ] | @despinoza | Granularity selector (Daily/Weekly/Monthly) wired to multi-timeframe endpoint |
-| C3 | [ ] | @despinoza | Indicator overlays (SMA/EMA/Bollinger) + S/R lines on the price chart |
-| C4 | [ ] | @despinoza | RSI/MACD subpanes + indicator settings drawer |
+| C1 | ✅ | @bvela | Technicals tab + `TechnicalSection` (score + S/R; reuse ScoreBadge/SubscoreChart) |
+| C2 | ✅ | @bvela | Granularity selector (Daily/Weekly/Monthly) wired to multi-timeframe endpoint |
+| C3 | ✅ | @bvela | Indicator overlays (SMA/EMA/Bollinger) + S/R lines on the price chart |
+| C4 | ✅ | @bvela | RSI/MACD subpanes + indicator settings drawer |
 
 ---
 
@@ -234,8 +234,14 @@
 | `components/ui/slider.tsx` | Accessible labeled range input primitive used by DcfWidget |
 | `components/dcf-widget.tsx` | Interactive DCF with 4 sliders, 250ms debounce, client-side validation, FCF bar chart |
 | `components/fundamentals-section.tsx` | Client island: fetches /fundamentals, composes all sub-components into the full view |
-| `components/ticker-tabs.tsx` | Price | Fundamentals tab bar (ARIA roles, no extra library) |
+| `components/ticker-tabs.tsx` | Price \| Fundamentals \| Technicals tab bar (ARIA roles, no extra library) |
 | `app/tickers/[symbol]/page.tsx` | Updated: TickerTabs replaces direct TickerPriceSection; Sentiment placeholder retained |
+| `components/subscore-chart.tsx` | Extended with optional `labels` prop — reused for Trend/Momentum/Mean Rev. on Technicals tab |
+| `lib/types/granularity.ts` | `Granularity = "1d" \| "1w" \| "1mo"` + label map for the technical analysis bar-granularity selector |
+| `components/granularity-toggle.tsx` | Segmented Daily/Weekly/Monthly toggle; drives the ?timeframe param on /technical and /indicators |
+| `components/technical-section.tsx` | Client island: fetches /technical (granularity-aware) + /indicators + /prices; composes TechnicalChart, score, S/R table, settings drawer |
+| `components/technical-chart.tsx` | Candlestick + SMA/EMA/Bollinger LineSeries overlays + S/R price lines + RSI/MACD as lightweight-charts v5 native panes |
+| `components/indicator-settings-drawer.tsx` | Accessible `<dialog>` drawer (native focus trap + Esc); toggles SMA/EMA/Bollinger/RSI/MACD and configures periods; exports `IndicatorSettings` type |
 
 **Stack:** Next.js 14.2 (App Router) + TypeScript + Tailwind CSS + ESLint + Prettier + shadcn/ui
 
@@ -313,6 +319,6 @@ cd backend && uv run alembic revision --autogenerate -m "<message>"
 
 **Sprint 3-C (frontend) — COMPLETE ✅:** ScoreBadge, SubscoreChart, PeerComparisonTable, Slider, DcfWidget, FundamentalsSection, TickerTabs, and page.tsx integration. Lint + build clean. All 6 frontend components committed.
 
-**Sprint 4 — Technical analysis module (Weeks 9–10) — ACTIVE 🚧:** Indicators (SMA/EMA, RSI, MACD, Bollinger, ATR), rule-based support/resistance, multi-timeframe aggregation, `scoring/technical.py` (trend + momentum + mean-reversion → 0–100), and a Technicals tab (chart overlays, RSI/MACD subpanes, indicator settings drawer). Plans drafted under `.claude/plans/sprint4-*.md`; checklist is the active-sprint section at the top of this file.
+**Sprint 4 — Technical analysis module (Weeks 9–10) — COMPLETE ✅:** All 11 tasks done (4-A1–A7, 4-B1–B4, 4-C1–C4). Indicators engine, multi-timeframe scoring, API endpoints, and full Technicals tab with chart overlays, RSI/MACD subpanes, indicator settings drawer, and granularity selector.
 
 **Sprint 5 (next) — News, sentiment & macro/sector module (Weeks 11–12):** News ingestion worker, article→ticker linking, FinBERT sentiment scoring (LLM fallback), per-ticker rolling sentiment, `/news` + `/sentiment` endpoints, FRED macro ingest, sector heatmap, and the News/Sentiment tab + macro dashboard.

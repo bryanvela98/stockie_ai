@@ -207,13 +207,14 @@ Companion to [`PLANNING_features.md`](./PLANNING_features.md). This is the worki
 - [x] `@bvela` `GET /tickers/{symbol}/indicators` (query-string driven) + schemas. *(B2)*
 - [x] `@bvela` `GET /tickers/{symbol}/technical` — score + subscores + S/R levels. *(B3)*
 - [x] `@bvela` Multi-timeframe cache + integration goldens + OpenAPI regen. *(B4)*
-- [ ] `@despinoza` Technicals tab: indicator overlays on chart, RSI/MACD subpanes, S/R level lines. *(C1)*
-- [ ] `@despinoza` Indicator settings drawer (toggle/configure indicators per chart). *(C2)*
-- [ ] `@despinoza` Timeframe selector wired to multi-timeframe endpoint. *(C3)*
+- [x] `@bvela` Technicals tab + `TechnicalSection` island (score + S/R; reuse ScoreBadge/SubscoreChart). *(C1)*
+- [x] `@bvela` Granularity selector (Daily/Weekly/Monthly) wired to multi-timeframe endpoint. *(C2)*
+- [x] `@bvela` Indicator overlays (SMA/EMA/Bollinger) + S/R lines on price chart via `TechnicalChart`. *(C3)*
+- [x] `@bvela` RSI/MACD subpanes (v5 native panes) + `IndicatorSettingsDrawer` (accessible `<dialog>`). *(C4)*
 
 **Retro:**
 
-> _What shipped:_ _What slipped:_ _What to change:_
+> _What shipped:_ Full Sprint 4 — indicators engine, multi-timeframe scoring, REST API, and Technicals tab (chart overlays, RSI/MACD subpanes, granularity selector, indicator settings drawer). _What slipped:_ Nothing. _What to change:_ —
 
 ---
 
