@@ -53,12 +53,18 @@ def _make_bars(
     Args:
         closes: Ordered list of close prices.
         spread: High/low spread as a fraction of close (default 0.5%).
-        start: First bar timestamp (default 2020-01-01 UTC).
+        start: First bar timestamp. Defaults to (today - n + 1) days ago so
+               that the last bar lands on today — keeping all bars inside any
+               reasonable lookback window (e.g. BARS_LOOKBACK_DAYS = 550).
 
     Returns:
         List of SyntheticBar objects, one per close value.
     """
-    base = start or datetime(2020, 1, 1, tzinfo=UTC)
+    n = len(closes)
+    default_start = datetime.now(UTC).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) - timedelta(days=n - 1)
+    base = start or default_start
     bars = []
     for i, c in enumerate(closes):
         o = closes[i - 1] if i > 0 else c
